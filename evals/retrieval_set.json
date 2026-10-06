@@ -1,0 +1,908 @@
+{
+ "note": "Hand-labelled. Tool cards are written the way Toolforge describes tools it forges; queries the way its planner phrases needs (name_hint + description). Negatives are needs no listed tool satisfies, several of them deliberate near-misses of a real tool.",
+ "tools": [
+  {
+   "name": "date_difference_in_days",
+   "description": "Absolute number of days between two ISO dates (YYYY-MM-DD).",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "start": {
+      "type": "string"
+     },
+     "end": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "start",
+     "end"
+    ]
+   }
+  },
+  {
+   "name": "business_days_between",
+   "description": "Count the weekdays (Monday to Friday) between two ISO dates, excluding weekends.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "start": {
+      "type": "string"
+     },
+     "end": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "start",
+     "end"
+    ]
+   }
+  },
+  {
+   "name": "day_of_week",
+   "description": "Return the English weekday name (e.g. Monday) for an ISO date.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "date": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "date"
+    ]
+   }
+  },
+  {
+   "name": "add_days_to_date",
+   "description": "Return the ISO date that is a given number of days after (or before, if negative) a date.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "date": {
+      "type": "string"
+     },
+     "days": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "date",
+     "days"
+    ]
+   }
+  },
+  {
+   "name": "age_in_years",
+   "description": "Whole years elapsed between a birth date and a reference date.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "birth_date": {
+      "type": "string"
+     },
+     "on_date": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "birth_date",
+     "on_date"
+    ]
+   }
+  },
+  {
+   "name": "convert_units",
+   "description": "Convert a length, mass or volume value between metric and imperial units (km, mi, kg, lb, l, gal, ...).",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "value": {
+      "type": "number"
+     },
+     "from_unit": {
+      "type": "string"
+     },
+     "to_unit": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "value",
+     "from_unit",
+     "to_unit"
+    ]
+   }
+  },
+  {
+   "name": "convert_temperature",
+   "description": "Convert a temperature between Celsius, Fahrenheit and Kelvin.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "value": {
+      "type": "number"
+     },
+     "from_scale": {
+      "type": "string"
+     },
+     "to_scale": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "value",
+     "from_scale",
+     "to_scale"
+    ]
+   }
+  },
+  {
+   "name": "is_prime",
+   "description": "Return true if an integer is a prime number.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "n": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "n"
+    ]
+   }
+  },
+  {
+   "name": "nth_prime",
+   "description": "Return the n-th prime number (1-indexed: nth_prime(1) = 2).",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "n": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "n"
+    ]
+   }
+  },
+  {
+   "name": "prime_factors",
+   "description": "List the prime factorisation of a positive integer, with repetition.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "n": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "n"
+    ]
+   }
+  },
+  {
+   "name": "gcd",
+   "description": "Greatest common divisor of two integers.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "integer"
+     },
+     "b": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "a",
+     "b"
+    ]
+   }
+  },
+  {
+   "name": "lcm",
+   "description": "Least common multiple of two positive integers.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "integer"
+     },
+     "b": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "a",
+     "b"
+    ]
+   }
+  },
+  {
+   "name": "int_to_roman",
+   "description": "Convert an integer from 1 to 3999 to a Roman numeral string.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "number": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "number"
+    ]
+   }
+  },
+  {
+   "name": "roman_to_int",
+   "description": "Parse a Roman numeral string and return its integer value.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "numeral": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "numeral"
+    ]
+   }
+  },
+  {
+   "name": "compound_interest",
+   "description": "Final amount of an investment with compound interest: principal, annual rate, compounding periods per year and years.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "principal": {
+      "type": "number"
+     },
+     "annual_rate": {
+      "type": "number"
+     },
+     "periods_per_year": {
+      "type": "integer"
+     },
+     "years": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "principal",
+     "annual_rate",
+     "periods_per_year",
+     "years"
+    ]
+   }
+  },
+  {
+   "name": "simple_interest",
+   "description": "Simple (non-compounding) interest earned on a principal at an annual rate over a number of years.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "principal": {
+      "type": "number"
+     },
+     "annual_rate": {
+      "type": "number"
+     },
+     "years": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "principal",
+     "annual_rate",
+     "years"
+    ]
+   }
+  },
+  {
+   "name": "loan_emi",
+   "description": "Equated monthly instalment (EMI) for a loan given principal, annual interest rate and tenure in months.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "principal": {
+      "type": "number"
+     },
+     "annual_rate": {
+      "type": "number"
+     },
+     "months": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "principal",
+     "annual_rate",
+     "months"
+    ]
+   }
+  },
+  {
+   "name": "count_vowels",
+   "description": "Count the vowels (a, e, i, o, u) in a text, case-insensitively.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   }
+  },
+  {
+   "name": "word_count",
+   "description": "Count the words in a text, splitting on whitespace.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   }
+  },
+  {
+   "name": "is_palindrome",
+   "description": "Check whether a text reads the same backwards, ignoring case, spaces and punctuation.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   }
+  },
+  {
+   "name": "levenshtein_distance",
+   "description": "Levenshtein edit distance: minimum single-character insertions, deletions and substitutions to turn one string into another.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "string"
+     },
+     "b": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "a",
+     "b"
+    ]
+   }
+  },
+  {
+   "name": "jaccard_similarity",
+   "description": "Jaccard similarity between the sets of words in two texts (intersection over union).",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "string"
+     },
+     "b": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "a",
+     "b"
+    ]
+   }
+  },
+  {
+   "name": "sha256_hex",
+   "description": "SHA-256 digest of a UTF-8 string as a lowercase hexadecimal string.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   }
+  },
+  {
+   "name": "md5_hex",
+   "description": "MD5 digest of a UTF-8 string as a lowercase hexadecimal string.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   }
+  },
+  {
+   "name": "base64_encode",
+   "description": "Encode a UTF-8 string as Base64 text.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   }
+  },
+  {
+   "name": "fibonacci",
+   "description": "Return the n-th Fibonacci number (fibonacci(0) = 0, fibonacci(1) = 1).",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "n": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "n"
+    ]
+   }
+  },
+  {
+   "name": "factorial",
+   "description": "Factorial n! of a non-negative integer.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "n": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "n"
+    ]
+   }
+  },
+  {
+   "name": "mean_median_mode",
+   "description": "Summary statistics of a list of numbers: mean, median and mode.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "numbers": {
+      "type": "array"
+     }
+    },
+    "required": [
+     "numbers"
+    ]
+   }
+  },
+  {
+   "name": "standard_deviation",
+   "description": "Population or sample standard deviation of a list of numbers.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "numbers": {
+      "type": "array"
+     },
+     "sample": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "numbers",
+     "sample"
+    ]
+   }
+  },
+  {
+   "name": "percentage_change",
+   "description": "Percentage change from an old value to a new value.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "old": {
+      "type": "number"
+     },
+     "new": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "old",
+     "new"
+    ]
+   }
+  },
+  {
+   "name": "bmi",
+   "description": "Body-mass index from weight in kilograms and height in metres.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "weight_kg": {
+      "type": "number"
+     },
+     "height_m": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "weight_kg",
+     "height_m"
+    ]
+   }
+  },
+  {
+   "name": "compound_annual_growth_rate",
+   "description": "CAGR: the constant yearly growth rate that takes a start value to an end value over a number of years.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "start_value": {
+      "type": "number"
+     },
+     "end_value": {
+      "type": "number"
+     },
+     "years": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "start_value",
+     "end_value",
+     "years"
+    ]
+   }
+  }
+ ],
+ "queries": [
+  {
+   "name_hint": "days_between_dates",
+   "description": "Number of days between two calendar dates.",
+   "gold": "date_difference_in_days"
+  },
+  {
+   "name_hint": "date_difference",
+   "description": "Compute how many days separate 2024-01-15 and 2024-03-01.",
+   "gold": "date_difference_in_days"
+  },
+  {
+   "name_hint": "elapsed_days",
+   "description": "Length of the interval from one date to another, in days.",
+   "gold": "date_difference_in_days"
+  },
+  {
+   "name_hint": "working_days",
+   "description": "How many working days fall between two dates (skip Saturdays and Sundays).",
+   "gold": "business_days_between"
+  },
+  {
+   "name_hint": "weekdays_between",
+   "description": "Number of weekdays between a start and an end date.",
+   "gold": "business_days_between"
+  },
+  {
+   "name_hint": "weekday_name",
+   "description": "Which day of the week a given date falls on.",
+   "gold": "day_of_week"
+  },
+  {
+   "name_hint": "get_day_of_week",
+   "description": "Return Monday..Sunday for a date string.",
+   "gold": "day_of_week"
+  },
+  {
+   "name_hint": "date_plus_offset",
+   "description": "Find the date 90 days after a given date.",
+   "gold": "add_days_to_date"
+  },
+  {
+   "name_hint": "shift_date",
+   "description": "Move a date forward or backward by N days.",
+   "gold": "add_days_to_date"
+  },
+  {
+   "name_hint": "compute_age",
+   "description": "How old is a person born on a date, as of another date, in years.",
+   "gold": "age_in_years"
+  },
+  {
+   "name_hint": "km_to_miles",
+   "description": "Convert kilometres to miles.",
+   "gold": "convert_units"
+  },
+  {
+   "name_hint": "unit_conversion",
+   "description": "Convert a quantity from one unit of length or weight to another.",
+   "gold": "convert_units"
+  },
+  {
+   "name_hint": "pounds_to_kg",
+   "description": "Turn a weight in pounds into kilograms.",
+   "gold": "convert_units"
+  },
+  {
+   "name_hint": "fahrenheit_to_celsius",
+   "description": "Convert a Fahrenheit temperature to Celsius.",
+   "gold": "convert_temperature"
+  },
+  {
+   "name_hint": "temperature_conversion",
+   "description": "Change a temperature reading from Kelvin to Fahrenheit.",
+   "gold": "convert_temperature"
+  },
+  {
+   "name_hint": "check_prime",
+   "description": "Determine whether a number is prime.",
+   "gold": "is_prime"
+  },
+  {
+   "name_hint": "primality_test",
+   "description": "Is 7919 a prime?",
+   "gold": "is_prime"
+  },
+  {
+   "name_hint": "kth_prime",
+   "description": "Find the 15th prime number.",
+   "gold": "nth_prime"
+  },
+  {
+   "name_hint": "prime_at_index",
+   "description": "Return the prime at a given position in the sequence of primes.",
+   "gold": "nth_prime"
+  },
+  {
+   "name_hint": "factorize",
+   "description": "Break an integer into its prime factors.",
+   "gold": "prime_factors"
+  },
+  {
+   "name_hint": "greatest_common_divisor",
+   "description": "Largest integer dividing both of two numbers.",
+   "gold": "gcd"
+  },
+  {
+   "name_hint": "highest_common_factor",
+   "description": "HCF of 84 and 126.",
+   "gold": "gcd"
+  },
+  {
+   "name_hint": "least_common_multiple",
+   "description": "Smallest positive number that is a multiple of both inputs.",
+   "gold": "lcm"
+  },
+  {
+   "name_hint": "to_roman",
+   "description": "Write an integer in Roman numerals.",
+   "gold": "int_to_roman"
+  },
+  {
+   "name_hint": "roman_numeral_encode",
+   "description": "Express 1994 as a Roman numeral.",
+   "gold": "int_to_roman"
+  },
+  {
+   "name_hint": "from_roman",
+   "description": "Convert a Roman numeral like MMXXIV back to an integer.",
+   "gold": "roman_to_int"
+  },
+  {
+   "name_hint": "parse_roman",
+   "description": "Value of the numeral XLII.",
+   "gold": "roman_to_int"
+  },
+  {
+   "name_hint": "compound_interest_amount",
+   "description": "Future value of a deposit with interest compounded monthly.",
+   "gold": "compound_interest"
+  },
+  {
+   "name_hint": "investment_growth",
+   "description": "How much 2500 grows to at 5% a year compounded quarterly for 10 years.",
+   "gold": "compound_interest"
+  },
+  {
+   "name_hint": "simple_interest_calc",
+   "description": "Interest on a principal without compounding.",
+   "gold": "simple_interest"
+  },
+  {
+   "name_hint": "monthly_loan_payment",
+   "description": "Monthly payment for a home loan over 240 months.",
+   "gold": "loan_emi"
+  },
+  {
+   "name_hint": "emi_calculator",
+   "description": "Compute the EMI for a car loan.",
+   "gold": "loan_emi"
+  },
+  {
+   "name_hint": "cagr",
+   "description": "Average annual growth rate between a starting and ending value over several years.",
+   "gold": "compound_annual_growth_rate"
+  },
+  {
+   "name_hint": "percent_change",
+   "description": "By what percentage did a price change from 80 to 100.",
+   "gold": "percentage_change"
+  },
+  {
+   "name_hint": "vowel_counter",
+   "description": "Count how many vowels a sentence contains.",
+   "gold": "count_vowels"
+  },
+  {
+   "name_hint": "count_words",
+   "description": "Number of words in a paragraph.",
+   "gold": "word_count"
+  },
+  {
+   "name_hint": "palindrome_check",
+   "description": "Is the phrase a palindrome if you ignore punctuation?",
+   "gold": "is_palindrome"
+  },
+  {
+   "name_hint": "edit_distance",
+   "description": "Minimum number of character edits to transform kitten into sitting.",
+   "gold": "levenshtein_distance"
+  },
+  {
+   "name_hint": "string_distance",
+   "description": "Distance between two strings counting insertions, deletions and substitutions.",
+   "gold": "levenshtein_distance"
+  },
+  {
+   "name_hint": "word_overlap",
+   "description": "Similarity of two sentences as shared words divided by all distinct words.",
+   "gold": "jaccard_similarity"
+  },
+  {
+   "name_hint": "sha256",
+   "description": "Hash a string with SHA-256 and return hex.",
+   "gold": "sha256_hex"
+  },
+  {
+   "name_hint": "hash_text",
+   "description": "Compute a SHA-2 256-bit hex digest of some text.",
+   "gold": "sha256_hex"
+  },
+  {
+   "name_hint": "md5",
+   "description": "MD5 checksum of a string.",
+   "gold": "md5_hex"
+  },
+  {
+   "name_hint": "to_base64",
+   "description": "Base64-encode a message.",
+   "gold": "base64_encode"
+  },
+  {
+   "name_hint": "fib",
+   "description": "The 30th Fibonacci number.",
+   "gold": "fibonacci"
+  },
+  {
+   "name_hint": "n_factorial",
+   "description": "Compute 10!.",
+   "gold": "factorial"
+  },
+  {
+   "name_hint": "describe_numbers",
+   "description": "Mean, median and most common value of a list.",
+   "gold": "mean_median_mode"
+  },
+  {
+   "name_hint": "median",
+   "description": "Middle value of a list of numbers.",
+   "gold": "mean_median_mode"
+  },
+  {
+   "name_hint": "std_dev",
+   "description": "Spread of a dataset as its standard deviation.",
+   "gold": "standard_deviation"
+  },
+  {
+   "name_hint": "body_mass_index",
+   "description": "BMI for a 70 kg person who is 1.75 m tall.",
+   "gold": "bmi"
+  },
+  {
+   "name_hint": "count_consonants",
+   "description": "Count the consonants in a text.",
+   "gold": null
+  },
+  {
+   "name_hint": "sha1_hex",
+   "description": "SHA-1 digest of a string as hex.",
+   "gold": null
+  },
+  {
+   "name_hint": "base64_decode",
+   "description": "Decode Base64 text back to a UTF-8 string.",
+   "gold": null
+  },
+  {
+   "name_hint": "business_hours_between",
+   "description": "Working hours between two timestamps, counting 9:00-17:00 only.",
+   "gold": null
+  },
+  {
+   "name_hint": "circle_area",
+   "description": "Area of a circle from its radius.",
+   "gold": null
+  },
+  {
+   "name_hint": "hex_to_rgb",
+   "description": "Convert a hex colour like #ff8800 to an RGB triple.",
+   "gold": null
+  },
+  {
+   "name_hint": "sort_numbers",
+   "description": "Sort a list of numbers in descending order.",
+   "gold": null
+  },
+  {
+   "name_hint": "binary_to_decimal",
+   "description": "Convert a binary string to an integer.",
+   "gold": null
+  },
+  {
+   "name_hint": "is_leap_year",
+   "description": "Whether a year is a leap year.",
+   "gold": null
+  },
+  {
+   "name_hint": "number_to_words",
+   "description": "Spell out 1234 in English words.",
+   "gold": null
+  },
+  {
+   "name_hint": "haversine_distance",
+   "description": "Great-circle distance in km between two latitude/longitude points.",
+   "gold": null
+  },
+  {
+   "name_hint": "reverse_string",
+   "description": "Reverse the characters of a string.",
+   "gold": null
+  },
+  {
+   "name_hint": "is_perfect_number",
+   "description": "Whether a number equals the sum of its proper divisors.",
+   "gold": null
+  },
+  {
+   "name_hint": "weeks_between",
+   "description": "Number of whole weeks between two dates.",
+   "gold": null
+  },
+  {
+   "name_hint": "mortgage_total_interest",
+   "description": "Total interest paid over the life of a loan.",
+   "gold": null
+  }
+ ]
+}

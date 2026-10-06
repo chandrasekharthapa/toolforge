@@ -10,5 +10,5 @@ venv/
 .ruff_cache/
 dist/
 build/
-evals/results/benchmark*
 !evals/results/.gitkeep
+evals/results/.progress/

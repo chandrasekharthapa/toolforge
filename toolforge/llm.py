@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -60,6 +61,34 @@ class LLMModelError(LLMConfigError):
     """The provider does not serve the configured model (HTTP 404, or 400 naming the model)."""
 
 
+class LLMQuotaError(LLMConfigError):
+    """The provider's rate limit needs a long wait (typically a daily token quota)."""
+
+
+#: rate-limit waits longer than this are reported instead of slept through
+MAX_RATE_LIMIT_WAIT_S = 90.0
+_DURATION = re.compile(r"(?:(\d+)h)?(?:(\d+)m(?!s))?(?:([\d.]+)s)?")
+
+
+def parse_wait(text: str) -> float | None:
+    """Seconds from messages like 'Please try again in 7m12.5s' / '1h2m' / '850ms'."""
+    m = re.search(r"try again in\s*([\dhms.]+)", text or "", re.IGNORECASE)
+    if not m:
+        return None
+    token = m.group(1).rstrip(".")
+    if token.endswith("ms") and token[:-2].replace(".", "", 1).isdigit():
+        return float(token[:-2]) / 1000
+    d = _DURATION.fullmatch(token)
+    if not d or not any(d.groups()):
+        return None
+    h, mins, secs = d.groups()
+    return int(h or 0) * 3600 + int(mins or 0) * 60 + float(secs or 0)
+
+
+def _notice(message: str) -> None:
+    print(f"  … {message}", file=sys.stderr, flush=True)
+
+
 class LLMBadRequest(RuntimeError):
     """HTTP 400 that is not a configuration problem, e.g. the provider's own JSON or
     tool-call validation rejecting what the model generated."""
@@ -76,7 +105,7 @@ class LLMGenerationError(ValueError):
 
 
 def _is_model_error(r) -> bool:
-    if r.status_code == 404:
+    if r.status_code in (404, 410):  # 410 Gone: the provider retired the model (NVIDIA NIM)
         return True
     if r.status_code != 400:
         return False
@@ -122,6 +151,8 @@ def salvage_reply(text: str) -> dict[str, Any] | None:
 #: which environment variable holds the key for each OpenAI-compatible provider
 PROVIDER_KEY_ENV = {
     "groq": "GROQ_API_KEY",
+    "nvidia": "NVIDIA_API_KEY",
+    "cerebras": "CEREBRAS_API_KEY",
     "openrouter": "OPENROUTER_API_KEY",
     "openai": "OPENAI_API_KEY",
     "openai-compatible": "OPENAI_API_KEY",
@@ -242,9 +273,9 @@ class OpenAICompatLLM(LLM):
         if api_key:
             key, self.key_source = api_key, "api_key argument"
         elif key_env and os.getenv(key_env):
-            from .config import PRESET_ENV
+            from .config import env_source
 
-            origin = "shell/system environment" if key_env in PRESET_ENV else ".env file"
+            origin = {"default": "environment"}.get(env_source(key_env), env_source(key_env))
             key, self.key_source = os.environ[key_env], f"{key_env} in your {origin}"
         else:
             key, self.key_source = "not-needed", "none"
@@ -271,14 +302,29 @@ class OpenAICompatLLM(LLM):
                 delay = min(delay * 2, 60)
                 continue
             if r.status_code == 429 or r.status_code >= 500:
-                if attempt == attempts - 1:
-                    r.raise_for_status()
+                detail = _error_detail(r) if r.status_code == 429 else f"HTTP {r.status_code}"
                 retry_after = r.headers.get("retry-after")
                 try:
-                    wait = float(retry_after) if retry_after else delay
+                    wait = float(retry_after) if retry_after else None
                 except ValueError:
-                    wait = delay
-                time.sleep(min(wait, 60))
+                    wait = None
+                wait = wait if wait is not None else (parse_wait(detail) if r.status_code == 429 else None)
+                wait = wait if wait is not None else delay
+                if r.status_code == 429 and wait > MAX_RATE_LIMIT_WAIT_S:
+                    mins = wait / 60
+                    raise LLMQuotaError(
+                        f"{self.provider} rate limit needs a {mins:.0f}-minute wait for {self.model!r}: {detail}\n"
+                        "  This is usually the free tier's daily token quota. Options: wait and re-run "
+                        "(the benchmark resumes where it stopped), or set TOOLFORGE_MODEL to another model "
+                        "(each model has its own quota; run `toolforge models`)."
+                    )
+                if attempt == attempts - 1:
+                    if r.status_code == 429:
+                        raise LLMQuotaError(f"{self.provider} kept rate-limiting after {attempts} attempts: {detail}")
+                    r.raise_for_status()
+                _notice(f"{'rate-limited' if r.status_code == 429 else 'server error'} by {self.provider}; "
+                        f"waiting {wait:.0f}s (attempt {attempt + 1}/{attempts - 1})")
+                time.sleep(wait)
                 delay = min(delay * 2, 60)
                 continue
             if r.status_code in (401, 403):
@@ -286,19 +332,22 @@ class OpenAICompatLLM(LLM):
                 raise LLMAuthError(
                     f"{self.provider} rejected the API key (HTTP {r.status_code}): {detail}\n"
                     f"  key sent: {self._key_hint}, read from {self.key_source}\n"
-                    "  Check that the key is current (a revoked or rotated key fails like this) and that an "
-                    "old value is not set in your shell or system environment, which takes priority over .env."
+                    "  Check that the key is current (a revoked or rotated key fails like this)."
                 )
             if _is_model_error(r):
                 detail = _error_detail(r)
                 try:
-                    available = ", ".join(self.list_models()) or "(none returned)"
+                    models = self.list_models()
+                    available = ", ".join(models[:30]) or "(none returned)"
+                    if len(models) > 30:
+                        available += f", … ({len(models)} in total)"
                 except Exception:  # noqa: BLE001 - best effort, the original error matters more
                     available = "(could not fetch the model list)"
                 raise LLMModelError(
-                    f"{self.provider} does not serve model {self.model!r} (HTTP {r.status_code}): {detail}\n"
+                    f"{self.provider} does not serve model {self.model!r}"
+                    f"{' any more (retired)' if r.status_code == 410 else ''} (HTTP {r.status_code}): {detail}\n"
                     f"  models available to your key: {available}\n"
-                    "  Set TOOLFORGE_MODEL in .env to one of these (run `toolforge models` to list them again)."
+                    "  Set TOOLFORGE_MODEL in .env to one of these (`toolforge models <word>` filters the list)."
                 )
             if r.status_code == 400:
                 try:
@@ -389,9 +438,11 @@ def make_llm(settings: Settings) -> LLM:
         return GeminiLLM(settings.model)
     if provider in {"anthropic", "claude"}:
         return AnthropicLLM(settings.model)
-    if provider in {"openai", "groq", "ollama", "openrouter", "openai-compatible"}:
+    if provider in {"openai", "groq", "nvidia", "cerebras", "ollama", "openrouter", "openai-compatible"}:
         defaults = {
             "groq": "https://api.groq.com/openai/v1",
+            "nvidia": "https://integrate.api.nvidia.com/v1",
+            "cerebras": "https://api.cerebras.ai/v1",
             "ollama": "http://localhost:11434/v1",
             "openrouter": "https://openrouter.ai/api/v1",
         }
@@ -405,14 +456,21 @@ def make_llm(settings: Settings) -> LLM:
 _FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL)
 
 
+_THINK = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
 def parse_json(text: str) -> dict[str, Any]:
-    """Robustly pull one JSON object out of a model reply."""
-    text = (text or "").strip()
+    """Robustly pull one JSON object out of a model reply.
+
+    Handles bare JSON, ```json fences, prose around the object, and reasoning models that
+    emit ``<think>…</think>`` first (whose braces would otherwise confuse a naive scan).
+    When several objects appear, the LAST complete one wins: models reason, then answer.
+    """
+    text = _THINK.sub("", text or "").strip()
+    if text.lower().startswith("<think>"):  # unterminated think block: keep what follows it
+        text = text.split("</think>")[-1]
     candidates = [text]
     candidates += [m.group(1).strip() for m in _FENCE.finditer(text)]
-    start, end = text.find("{"), text.rfind("}")
-    if start != -1 and end > start:
-        candidates.append(text[start : end + 1])
     for c in candidates:
         try:
             value = json.loads(c)
@@ -420,4 +478,18 @@ def parse_json(text: str) -> dict[str, Any]:
             continue
         if isinstance(value, dict):
             return value
+    decoder = json.JSONDecoder()
+    found = None
+    i = text.find("{")
+    while i != -1:
+        try:
+            value, end = decoder.raw_decode(text, i)
+        except json.JSONDecodeError:
+            i = text.find("{", i + 1)
+            continue
+        if isinstance(value, dict):
+            found = value
+        i = text.find("{", end)  # skip past this object so a nested one never replaces it
+    if found is not None:
+        return found
     raise ValueError(f"Model did not return a JSON object: {text[:300]!r}")

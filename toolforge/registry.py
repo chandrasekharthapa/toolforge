@@ -43,6 +43,10 @@ CREATE TABLE IF NOT EXISTS lessons (
     embedding   TEXT,
     created_at  TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS meta (
+    key    TEXT PRIMARY KEY,
+    value  TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS runs (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     task           TEXT NOT NULL,
@@ -137,6 +141,21 @@ class Registry:
         with self._lock:
             self.conn.execute("UPDATE tools SET embedding=? WHERE id=?",
                               (json.dumps(embedding.tolist()), tool_id))
+            self.conn.commit()
+
+    def get_meta(self, key: str) -> str | None:
+        row = self.conn.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+        return row[0] if row else None
+
+    def set_meta(self, key: str, value: str) -> None:
+        with self._lock:
+            self.conn.execute("INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value="
+                              "excluded.value", (key, value))
+            self.conn.commit()
+
+    def set_lesson_embedding(self, lesson_id: int, embedding: np.ndarray) -> None:
+        with self._lock:
+            self.conn.execute("UPDATE lessons SET embedding=? WHERE id=?", (json.dumps(embedding.tolist()), lesson_id))
             self.conn.commit()
 
     def record_use(self, tool_id: int, success: bool) -> None:

@@ -58,7 +58,23 @@ def _event(e: dict[str, Any]) -> None:
         print(c("execute ", "36"), f"{e['calls']} tool call(s)")
 
 
+def _safe_console() -> None:
+    """Never crash on a character the console cannot show (Windows pipes default to cp1252)."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):  # not a TextIOWrapper (e.g. captured in tests)
+            pass
+
+
+def _where(name: str) -> str:
+    from .config import env_source
+
+    return env_source(name)
+
+
 def main(argv: list[str] | None = None) -> int:
+    _safe_console()
     parser = argparse.ArgumentParser(prog="toolforge", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--db", help="library database path (default: $TOOLFORGE_DB or toolforge.db)")
@@ -77,7 +93,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("name")
     sub.add_parser("lessons", help="list lessons learned from repairs")
     sub.add_parser("stats", help="library and run statistics")
-    sub.add_parser("models", help="list the models your provider serves to your key")
+    p = sub.add_parser("models", help="list the models your provider serves to your key")
+    p.add_argument("filter", nargs="?", default="", help="only show models containing this text")
     p = sub.add_parser("curate", help="find duplicate / under-performing tools")
     p.add_argument("--apply", action="store_true", help="retire under-performing tools")
     p = sub.add_parser("serve", help="run the REST API")
@@ -113,8 +130,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"listing models is supported for OpenAI-compatible providers, not {settings.provider!r}")
             return 1
         try:
-            for model_id in llm.list_models():
-                mark = "  ← configured" if model_id == llm.model else ""
+            for model_id in [m for m in llm.list_models() if args.filter.lower() in m.lower()]:
+                mark = "  <- configured" if model_id == llm.model else ""
                 print(model_id + mark)
         except LLMConfigError as e:
             print(c("error   ", "31") + str(e), file=sys.stderr)
@@ -130,6 +147,9 @@ def main(argv: list[str] | None = None) -> int:
         from .llm import LLMConfigError
 
         try:
+            if not args.json:
+                print(c(f"using   {settings.provider}:{settings.model or '(default model)'}", "2")
+                      + c(f"  (provider from {_where('TOOLFORGE_PROVIDER')})", "2"))
             forge = Toolforge(settings, registry=registry, rag=not args.no_rag)
             result = forge.run(args.task, on_event=None if args.json else _event)
         except LLMConfigError as e:

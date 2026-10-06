@@ -88,3 +88,22 @@ def test_single_dict_parameter_is_left_alone():
                   code="def count_keys(data: dict) -> int:\n    return len(data)\n",
                   tests=[{"args": [{"data": 1}], "expected": 1}])
     assert d.tests[0].args == [{"data": 1}] and d.tests[0].kwargs == {}
+
+
+def test_switching_embedder_reembeds_the_library(tmp_path):
+    from toolforge.embeddings import Embedder
+
+    class Other(Embedder):  # same dimension as the hashing embedder, different vectors
+        name = "other"
+        model = "x"
+
+        def embed(self, texts, kind="passage"):
+            return HashingEmbedder(dim=1024).embed([t[::-1] for t in texts])
+
+    reg = Registry(str(tmp_path / "t.db"))
+    kn = Knowledge(reg, emb)
+    kn.add_tool(ToolDraft(**draft()), origin_task="t", verification=Verification())
+    before = reg.tool_embeddings()[0][1]
+    Knowledge(reg, Other())  # opening the library with another embedder re-embeds it
+    after = reg.tool_embeddings()[0][1]
+    assert reg.get_meta("embedder") == "other:x" and not np.allclose(before, after)

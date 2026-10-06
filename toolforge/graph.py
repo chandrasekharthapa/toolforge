@@ -268,22 +268,39 @@ class Forge:
         return {"verified": True, "draft": draft.model_dump(), "verification": verification.model_dump(),
                 **updates, "trace": self._log(state, "verify", ok=True, **verification.model_dump())}
 
-    def _resolve_name(self, draft: ToolDraft) -> ToolDraft:
-        """Avoid clobbering an unrelated tool that happens to share the name."""
+    def _resolve_name(self, draft: ToolDraft) -> tuple[ToolDraft, str]:
+        """Decide whether a draft may become the next version of a same-named tool.
+
+        A draft only supersedes the active tool if it has the same parameters AND still passes every
+        test the active version carries: it must still do the old tool's job. Otherwise (a temperature
+        converter that happens to be called convert_units, say) it is stored under a fresh name, so
+        the tools other tasks already rely on are never silently replaced.
+        """
         existing = self.registry.get(draft.name)
-        if existing is None or set(existing.parameters.get("properties", {})) == set(
-                draft.parameters.get("properties", {})):
-            return draft  # new name, or a compatible new version of the same tool
+        if existing is None:
+            return draft, "new"
+        same_signature = set(existing.parameters.get("properties", {})) == set(draft.parameters.get("properties", {}))
+        if same_signature and existing.tests:
+            check = self.sandbox.run_tests(draft.code, draft.name, existing.tests)
+            if check.ok:
+                known = {json.dumps(t.model_dump(), sort_keys=True, default=str) for t in draft.tests}
+                inherited = [t for t in existing.tests
+                             if json.dumps(t.model_dump(), sort_keys=True, default=str) not in known]
+                return draft.model_copy(update={"tests": [*draft.tests, *inherited]}), "new_version"
+        elif same_signature:
+            return draft, "new_version"
         n = 2
         while self.registry.get(f"{draft.name}_{n}"):
             n += 1
         new = f"{draft.name}_{n}"
         code = re.sub(rf"\b{re.escape(draft.name)}\b", new, draft.code)
-        return draft.model_copy(update={"name": new, "code": code})
+        return draft.model_copy(update={"name": new, "code": code}), "renamed"
 
     def register(self, state: ForgeState) -> dict[str, Any]:
-        draft = self._resolve_name(ToolDraft(**state["draft"]))
+        draft, how = self._resolve_name(ToolDraft(**state["draft"]))
         verification = Verification(**state.get("verification", {}))
+        if how == "new_version":
+            verification.tests_total = verification.tests_passed = len(draft.tests)
         tool = self.knowledge.add_tool(draft, origin_task=state["task"], verification=verification)
         need = self._need(state)
         for lesson in state.get("pending_lessons", []):
@@ -291,7 +308,7 @@ class Forge:
         bound = state["bound"] + ([tool.name] if tool.name not in state["bound"] else [])
         return {"bound": bound, "created": state["created"] + [tool.name], "idx": state["idx"] + 1,
                 **_PER_NEED_RESET,
-                "trace": self._log(state, "register", tool=tool.name, version=tool.version,
+                "trace": self._log(state, "register", tool=tool.name, version=tool.version, how=how,
                                    lessons=len(state.get("pending_lessons", [])))}
 
     def give_up(self, state: ForgeState) -> dict[str, Any]:

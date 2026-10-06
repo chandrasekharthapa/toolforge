@@ -27,7 +27,8 @@ class Toolforge:
         self.embedder = embedder or make_embedder(self.settings)
         self.registry = registry or Registry(self.settings.db_path)
         self.sandbox = sandbox or Sandbox(self.settings.sandbox_timeout, self.settings.sandbox_memory_mb)
-        self.knowledge = Knowledge(self.registry, self.embedder, rag=rag)
+        self.knowledge = Knowledge(self.registry, self.embedder, rag=rag,
+                                   lexical_weight=self.settings.lexical_weight)
         self.forge = Forge(self.llm, self.knowledge, self.sandbox, self.settings)
         self.graph = self.forge.build()
 

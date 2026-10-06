@@ -20,10 +20,29 @@ from .retrieval import Doc, Hit, hybrid_search
 
 
 class Knowledge:
-    def __init__(self, registry: Registry, embedder: Embedder, *, rag: bool = True) -> None:
+    def __init__(self, registry: Registry, embedder: Embedder, *, rag: bool = True,
+                 lexical_weight: float | None = None) -> None:
         self.registry = registry
         self.embedder = embedder
         self.rag = rag
+        self.lexical_weight = embedder.lexical_weight if lexical_weight is None else lexical_weight
+        self._reembed_if_embedder_changed()
+
+    def _reembed_if_embedder_changed(self) -> None:
+        """Vectors from different embedders are not comparable even at equal dimension."""
+        stored = self.registry.get_meta("embedder")
+        if stored == self.embedder.identity:
+            return
+        tools = [t for t, _ in self.registry.tool_embeddings()]
+        if tools:
+            for tool, vec in zip(tools, self.embedder.embed([t.search_text() for t in tools])):
+                self.registry.set_embedding(tool.id, vec)
+        lessons = self.registry.list_lessons()
+        if lessons:
+            texts = [f"{x.need} {x.mistake} {x.fix}" for x in lessons]
+            for lesson, vec in zip(lessons, self.embedder.embed(texts)):
+                self.registry.set_lesson_embedding(lesson.id, vec)
+        self.registry.set_meta("embedder", self.embedder.identity)
 
     # ------------------------------------------------------------------ tools
     def _tool_docs(self) -> list[Doc]:
@@ -44,7 +63,7 @@ class Knowledge:
         docs = self._tool_docs()
         if not docs:
             return []
-        return hybrid_search(query, self.embedder.embed_one(query), docs, k)
+        return hybrid_search(query, self.embedder.embed_query(query), docs, k, lexical_weight=self.lexical_weight)
 
     def add_tool(self, draft: ToolDraft, *, origin_task: str, verification: Verification) -> Tool:
         vec = self.embedder.embed_one(draft.search_text())
@@ -70,7 +89,7 @@ class Knowledge:
                 for lesson, vec in pairs]
         if not docs:
             return []
-        hits = hybrid_search(query, self.embedder.embed_one(query), docs, k)
+        hits = hybrid_search(query, self.embedder.embed_query(query), docs, k, lexical_weight=self.lexical_weight)
         floor = self.embedder.consider_threshold
         return [h.payload for h in hits if h.cosine >= floor or h.bm25 > 0]
 

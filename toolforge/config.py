@@ -5,15 +5,32 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 
-#: variables that were already set before .env was read (they take priority over .env)
+#: variables that were already set in the process environment before .env was read
 PRESET_ENV = frozenset(os.environ)
+#: variables the project's .env file defines
+DOTENV_KEYS: frozenset[str] = frozenset()
+#: path of the .env file that was loaded ("" when none)
+DOTENV_PATH = ""
 
 try:  # optional convenience
-    from dotenv import load_dotenv
+    from dotenv import dotenv_values, find_dotenv, load_dotenv
 
-    load_dotenv()
+    DOTENV_PATH = find_dotenv(usecwd=True) or find_dotenv()
+    if DOTENV_PATH:
+        DOTENV_KEYS = frozenset(k for k, v in dotenv_values(DOTENV_PATH).items() if v is not None)
+        # The project's .env WINS over inherited variables. Editors (VS Code's Python extension)
+        # copy .env into every new terminal; after the file is edited that stale copy would
+        # otherwise silently override it. A variable .env does not define still comes from the shell.
+        load_dotenv(DOTENV_PATH, override=True)
 except ImportError:  # pragma: no cover
     pass
+
+
+def env_source(name: str) -> str:
+    """Where a setting's value comes from: '.env', 'shell environment' or 'default'."""
+    if name in DOTENV_KEYS:
+        return ".env"
+    return "shell environment" if name in PRESET_ENV else "default"
 
 
 def _env(name: str, default: str | None = None) -> str | None:
@@ -53,6 +70,9 @@ class Settings:
         default_factory=lambda: float(v) if (v := _env("TOOLFORGE_CONSIDER_THRESHOLD")) else None
     )
     top_k: int = field(default_factory=lambda: _int("TOOLFORGE_TOP_K", 4))
+    lexical_weight: float | None = field(
+        default_factory=lambda: float(v) if (v := _env("TOOLFORGE_LEXICAL_WEIGHT")) else None
+    )
 
     # --- forging ------------------------------------------------------------
     max_needs: int = field(default_factory=lambda: _int("TOOLFORGE_MAX_NEEDS", 3))

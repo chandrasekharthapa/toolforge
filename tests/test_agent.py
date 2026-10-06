@@ -237,3 +237,39 @@ def test_executor_answers_directly_when_no_tool_was_needed(make_forge):
     brain = Brain()  # planner returns no needs
     result = make_forge(brain).run("Say hello")
     assert result.tool_calls == [] and brain.roles.count("executor") == 1
+
+
+def _two_forges(make_forge, second):
+    brain = Brain().plan("How many days", NEED).plan("How many weeks", NEED)
+    brain.will_write("days_between", draft(), second)
+    forge = make_forge(brain, differential=False, reuse_threshold=1.01, consider_threshold=1.01)
+    forge.run("How many days between 2024-01-15 and 2024-03-01?")
+    return forge, forge.run("How many weeks between 2024-01-15 and 2024-03-01?")
+
+
+def test_same_name_different_job_never_replaces_the_tool(make_forge):
+    weeks = DAYS_BETWEEN.replace("return abs((b - a).days)", "return abs((b - a).days) // 7")
+    weeks_tests = [{"kwargs": {"start": "2024-01-01", "end": "2024-01-15"}, "expected": 2},
+                   {"kwargs": {"start": "2024-01-15", "end": "2024-01-01"}, "expected": 2},
+                   {"kwargs": {"start": "2024-01-01", "end": "2024-03-01"}, "expected": 8}]
+    forge, result = _two_forges(make_forge, draft(weeks, tests=weeks_tests))
+
+    assert result.created == ["days_between_2"]  # renamed: it fails the original's tests
+    original = forge.registry.get("days_between")
+    assert original.version == 1 and original.status == "active" and "// 7" not in original.code
+    register = next(e for e in result.trace if e["node"] == "register")
+    assert register["how"] == "renamed"
+
+
+def test_compatible_improvement_becomes_next_version_and_inherits_tests(make_forge):
+    better = DAYS_BETWEEN.replace('"""Absolute', '"""(v2) Absolute')
+    own_tests = [{"kwargs": {"start": "2020-01-01", "end": "2020-12-31"}, "expected": 365},
+                 {"kwargs": {"start": "2021-01-01", "end": "2021-01-01"}, "expected": 0},
+                 {"kwargs": {"start": "1999-12-31", "end": "2000-01-01"}, "expected": 1}]
+    forge, result = _two_forges(make_forge, draft(better, tests=own_tests))
+
+    assert result.created == ["days_between"]
+    tool = forge.registry.get("days_between")
+    assert tool.version == 2 and "(v2)" in tool.code
+    assert len(tool.tests) == 6 and tool.verification.tests_total == 6  # 3 own + 3 inherited from v1
+    assert [v.status for v in forge.registry.versions("days_between")] == ["superseded", "active"]

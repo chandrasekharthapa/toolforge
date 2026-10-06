@@ -1,0 +1,1064 @@
+{
+  "meta": {
+    "tasks": 20,
+    "model": "nvidia:nvidia/nemotron-3-super-120b-a12b",
+    "embedder": "hashing",
+    "date": "2026-10-06"
+  },
+  "summary": {
+    "fresh": {
+      "tasks": 20,
+      "accuracy": 0.95,
+      "verified_accuracy": 0.85,
+      "unverified_answers": 3,
+      "total_tokens": 141340,
+      "mean_tokens": 7067,
+      "mean_llm_calls": 5.4,
+      "mean_latency_s": 47.77,
+      "tools_created": 17,
+      "tools_reused": 0,
+      "reuse_rate": 0.0,
+      "failed_needs": 3
+    },
+    "library": {
+      "tasks": 20,
+      "accuracy": 1.0,
+      "verified_accuracy": 1.0,
+      "unverified_answers": 0,
+      "total_tokens": 116114,
+      "mean_tokens": 5806,
+      "mean_llm_calls": 5.25,
+      "mean_latency_s": 36.72,
+      "tools_created": 12,
+      "tools_reused": 8,
+      "reuse_rate": 0.4,
+      "failed_needs": 0
+    },
+    "library-norag": {
+      "tasks": 20,
+      "accuracy": 1.0,
+      "verified_accuracy": 0.95,
+      "unverified_answers": 1,
+      "total_tokens": 76630,
+      "mean_tokens": 3832,
+      "mean_llm_calls": 4.95,
+      "mean_latency_s": 21.66,
+      "tools_created": 11,
+      "tools_reused": 8,
+      "reuse_rate": 0.421,
+      "failed_needs": 0
+    }
+  },
+  "reuse": {
+    "tasks": [
+      "dates-2",
+      "units-2",
+      "interest-2",
+      "text-2",
+      "edit-2",
+      "temp-2",
+      "weekday-2",
+      "dates-3"
+    ],
+    "fresh_tokens": 64318,
+    "library_tokens": 16121,
+    "token_saving": 0.749,
+    "fresh_latency_s": 422.2,
+    "library_latency_s": 70.4,
+    "latency_saving": 0.833
+  },
+  "rows": {
+    "fresh": [
+      {
+        "id": "dates-1",
+        "family": "dates",
+        "correct": true,
+        "answer": "46",
+        "expected": 46,
+        "tokens": 7843,
+        "llm_calls": 6,
+        "latency_s": 56.656,
+        "created": [
+          "date_difference"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "units-1",
+        "family": "units",
+        "correct": true,
+        "answer": "62.14",
+        "expected": 62.14,
+        "tokens": 7620,
+        "llm_calls": 5,
+        "latency_s": 52.118,
+        "created": [
+          "convert_units"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "prime-1",
+        "family": "primes",
+        "correct": true,
+        "answer": "yes",
+        "expected": "yes",
+        "tokens": 2805,
+        "llm_calls": 5,
+        "latency_s": 19.266,
+        "created": [
+          "is_prime"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "roman-1",
+        "family": "roman",
+        "correct": true,
+        "answer": "MCMXCIV",
+        "expected": "MCMXCIV",
+        "tokens": 3706,
+        "llm_calls": 5,
+        "latency_s": 25.263,
+        "created": [
+          "int_to_roman"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "interest-1",
+        "family": "finance",
+        "correct": false,
+        "answer": "14176.24",
+        "expected": 14176.25,
+        "tokens": 19496,
+        "llm_calls": 6,
+        "latency_s": 157.016,
+        "created": [],
+        "reused": [],
+        "failed": [
+          "compound_interest"
+        ],
+        "tool_calls": 0
+      },
+      {
+        "id": "text-1",
+        "family": "text",
+        "correct": true,
+        "answer": "11",
+        "expected": 11,
+        "tokens": 2407,
+        "llm_calls": 5,
+        "latency_s": 11.32,
+        "created": [
+          "count_vowels"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "edit-1",
+        "family": "edit",
+        "correct": true,
+        "answer": "3",
+        "expected": 3,
+        "tokens": 3416,
+        "llm_calls": 5,
+        "latency_s": 24.125,
+        "created": [
+          "levenshtein_distance"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "temp-1",
+        "family": "temperature",
+        "correct": true,
+        "answer": "37.0",
+        "expected": 37.0,
+        "tokens": 5363,
+        "llm_calls": 5,
+        "latency_s": 33.151,
+        "created": [
+          "convert_temperature"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "dates-2",
+        "family": "dates",
+        "correct": true,
+        "answer": "51",
+        "expected": 51,
+        "tokens": 16987,
+        "llm_calls": 6,
+        "latency_s": 113.849,
+        "created": [],
+        "reused": [],
+        "failed": [
+          "days_between_dates"
+        ],
+        "tool_calls": 0
+      },
+      {
+        "id": "weekday-1",
+        "family": "dates",
+        "correct": true,
+        "answer": "Friday",
+        "expected": "Friday",
+        "tokens": 11261,
+        "llm_calls": 7,
+        "latency_s": 69.182,
+        "created": [
+          "day_of_week"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "units-2",
+        "family": "units",
+        "correct": true,
+        "answer": "42.16 km",
+        "expected": 42.16,
+        "tokens": 4579,
+        "llm_calls": 5,
+        "latency_s": 21.341,
+        "created": [
+          "convert_units"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "prime-2",
+        "family": "primes",
+        "correct": true,
+        "answer": "47",
+        "expected": 47,
+        "tokens": 3334,
+        "llm_calls": 5,
+        "latency_s": 20.312,
+        "created": [
+          "nth_prime"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "roman-2",
+        "family": "roman",
+        "correct": true,
+        "answer": "2024",
+        "expected": 2024,
+        "tokens": 6174,
+        "llm_calls": 6,
+        "latency_s": 44.428,
+        "created": [
+          "roman_to_int"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "interest-2",
+        "family": "finance",
+        "correct": true,
+        "answer": "4109.05",
+        "expected": 4109.05,
+        "tokens": 17860,
+        "llm_calls": 6,
+        "latency_s": 143.469,
+        "created": [
+          "compute_compound_interest"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "text-2",
+        "family": "text",
+        "correct": true,
+        "answer": "7",
+        "expected": 7,
+        "tokens": 2706,
+        "llm_calls": 5,
+        "latency_s": 12.022,
+        "created": [
+          "count_vowels"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "edit-2",
+        "family": "edit",
+        "correct": true,
+        "answer": "2",
+        "expected": 2,
+        "tokens": 3633,
+        "llm_calls": 5,
+        "latency_s": 18.961,
+        "created": [
+          "levenshtein_distance"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "temp-2",
+        "family": "temperature",
+        "correct": true,
+        "answer": "-40\u00b0F",
+        "expected": -40.0,
+        "tokens": 4468,
+        "llm_calls": 5,
+        "latency_s": 25.178,
+        "created": [
+          "convert_temperature"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "hash-1",
+        "family": "hash",
+        "correct": true,
+        "answer": "c30720927531",
+        "expected": "c30720927531",
+        "tokens": 3597,
+        "llm_calls": 5,
+        "latency_s": 20.375,
+        "created": [
+          "sha256_hex"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "weekday-2",
+        "family": "dates",
+        "correct": true,
+        "answer": "Thursday",
+        "expected": "Thursday",
+        "tokens": 3438,
+        "llm_calls": 5,
+        "latency_s": 25.661,
+        "created": [
+          "get_day_of_week"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "dates-3",
+        "family": "dates",
+        "correct": true,
+        "answer": "2",
+        "expected": 2,
+        "tokens": 10647,
+        "llm_calls": 6,
+        "latency_s": 61.753,
+        "created": [],
+        "reused": [],
+        "failed": [
+          "date_difference"
+        ],
+        "tool_calls": 0
+      }
+    ],
+    "library": [
+      {
+        "id": "dates-1",
+        "family": "dates",
+        "correct": true,
+        "answer": "46",
+        "expected": 46,
+        "tokens": 5690,
+        "llm_calls": 6,
+        "latency_s": 24.751,
+        "created": [
+          "date_difference"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "units-1",
+        "family": "units",
+        "correct": true,
+        "answer": "62.14",
+        "expected": 62.14,
+        "tokens": 5305,
+        "llm_calls": 5,
+        "latency_s": 41.814,
+        "created": [
+          "convert_units"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "prime-1",
+        "family": "primes",
+        "correct": true,
+        "answer": "yes",
+        "expected": "yes",
+        "tokens": 3822,
+        "llm_calls": 5,
+        "latency_s": 16.783,
+        "created": [
+          "is_prime"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "roman-1",
+        "family": "roman",
+        "correct": true,
+        "answer": "MCMXCIV",
+        "expected": "MCMXCIV",
+        "tokens": 4193,
+        "llm_calls": 5,
+        "latency_s": 21.405,
+        "created": [
+          "int_to_roman"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "interest-1",
+        "family": "finance",
+        "correct": true,
+        "answer": "14176.25",
+        "expected": 14176.25,
+        "tokens": 6134,
+        "llm_calls": 5,
+        "latency_s": 26.715,
+        "created": [
+          "compute_compound_interest"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "text-1",
+        "family": "text",
+        "correct": true,
+        "answer": "11",
+        "expected": 11,
+        "tokens": 4481,
+        "llm_calls": 6,
+        "latency_s": 12.197,
+        "created": [
+          "count_vowels"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "edit-1",
+        "family": "edit",
+        "correct": true,
+        "answer": "3",
+        "expected": 3,
+        "tokens": 4860,
+        "llm_calls": 6,
+        "latency_s": 21.423,
+        "created": [
+          "levenshtein_distance"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "temp-1",
+        "family": "temperature",
+        "correct": true,
+        "answer": "37.0",
+        "expected": 37.0,
+        "tokens": 6417,
+        "llm_calls": 6,
+        "latency_s": 41.004,
+        "created": [
+          "convert_temperature"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "dates-2",
+        "family": "dates",
+        "correct": true,
+        "answer": "51",
+        "expected": 51,
+        "tokens": 1767,
+        "llm_calls": 4,
+        "latency_s": 4.783,
+        "created": [],
+        "reused": [
+          "date_difference"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "weekday-1",
+        "family": "dates",
+        "correct": true,
+        "answer": "Friday",
+        "expected": "Friday",
+        "tokens": 4811,
+        "llm_calls": 6,
+        "latency_s": 14.125,
+        "created": [
+          "get_day_of_week"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "units-2",
+        "family": "units",
+        "correct": true,
+        "answer": "42.16 km",
+        "expected": 42.16,
+        "tokens": 2375,
+        "llm_calls": 4,
+        "latency_s": 9.683,
+        "created": [],
+        "reused": [
+          "convert_units"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "prime-2",
+        "family": "primes",
+        "correct": true,
+        "answer": "47",
+        "expected": 47,
+        "tokens": 4653,
+        "llm_calls": 6,
+        "latency_s": 15.824,
+        "created": [
+          "nth_prime"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "roman-2",
+        "family": "roman",
+        "correct": true,
+        "answer": "2024",
+        "expected": 2024,
+        "tokens": 19001,
+        "llm_calls": 9,
+        "latency_s": 140.645,
+        "created": [
+          "roman_to_int"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "interest-2",
+        "family": "finance",
+        "correct": true,
+        "answer": "4109.05",
+        "expected": 4109.05,
+        "tokens": 2578,
+        "llm_calls": 4,
+        "latency_s": 11.532,
+        "created": [],
+        "reused": [
+          "compute_compound_interest"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "text-2",
+        "family": "text",
+        "correct": true,
+        "answer": "7",
+        "expected": 7,
+        "tokens": 2015,
+        "llm_calls": 4,
+        "latency_s": 13.996,
+        "created": [],
+        "reused": [
+          "count_vowels"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "edit-2",
+        "family": "edit",
+        "correct": true,
+        "answer": "2",
+        "expected": 2,
+        "tokens": 1066,
+        "llm_calls": 3,
+        "latency_s": 3.855,
+        "created": [],
+        "reused": [
+          "levenshtein_distance"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "temp-2",
+        "family": "temperature",
+        "correct": true,
+        "answer": "-40.0",
+        "expected": -40.0,
+        "tokens": 2105,
+        "llm_calls": 4,
+        "latency_s": 8.631,
+        "created": [],
+        "reused": [
+          "convert_temperature"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "hash-1",
+        "family": "hash",
+        "correct": true,
+        "answer": "c30720927531",
+        "expected": "c30720927531",
+        "tokens": 30626,
+        "llm_calls": 9,
+        "latency_s": 287.284,
+        "created": [
+          "sha256_hex"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "weekday-2",
+        "family": "dates",
+        "correct": true,
+        "answer": "Thursday",
+        "expected": "Thursday",
+        "tokens": 2211,
+        "llm_calls": 4,
+        "latency_s": 11.022,
+        "created": [],
+        "reused": [
+          "get_day_of_week"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "dates-3",
+        "family": "dates",
+        "correct": true,
+        "answer": "2",
+        "expected": 2,
+        "tokens": 2004,
+        "llm_calls": 4,
+        "latency_s": 6.91,
+        "created": [],
+        "reused": [
+          "date_difference"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "_library": {
+          "active_tools": 12,
+          "tool_versions": 12,
+          "lessons": 7,
+          "runs": 20,
+          "total_tokens": 116114,
+          "avg_latency_s": 36.719,
+          "tools_created": 12,
+          "tools_reused": 8,
+          "reuse_rate": 0.4,
+          "tool_calls": 20
+        }
+      }
+    ],
+    "library-norag": [
+      {
+        "id": "dates-1",
+        "family": "dates",
+        "correct": true,
+        "answer": "46",
+        "expected": 46,
+        "tokens": 7163,
+        "llm_calls": 6,
+        "latency_s": 45.95,
+        "created": [
+          "date_difference"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "units-1",
+        "family": "units",
+        "correct": true,
+        "answer": "62.14",
+        "expected": 62.14,
+        "tokens": 4090,
+        "llm_calls": 5,
+        "latency_s": 19.884,
+        "created": [
+          "convert_units"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "prime-1",
+        "family": "primes",
+        "correct": true,
+        "answer": "yes",
+        "expected": "yes",
+        "tokens": 837,
+        "llm_calls": 2,
+        "latency_s": 6.207,
+        "created": [],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 0
+      },
+      {
+        "id": "roman-1",
+        "family": "roman",
+        "correct": true,
+        "answer": "MCMXCIV",
+        "expected": "MCMXCIV",
+        "tokens": 4402,
+        "llm_calls": 5,
+        "latency_s": 38.741,
+        "created": [
+          "int_to_roman"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "interest-1",
+        "family": "finance",
+        "correct": true,
+        "answer": "14176.25",
+        "expected": 14176.25,
+        "tokens": 9307,
+        "llm_calls": 6,
+        "latency_s": 52.051,
+        "created": [
+          "compute_compound_interest"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "text-1",
+        "family": "text",
+        "correct": true,
+        "answer": "11",
+        "expected": 11,
+        "tokens": 3063,
+        "llm_calls": 6,
+        "latency_s": 11.36,
+        "created": [
+          "count_vowels"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "edit-1",
+        "family": "edit",
+        "correct": true,
+        "answer": "3",
+        "expected": 3,
+        "tokens": 4293,
+        "llm_calls": 6,
+        "latency_s": 18.167,
+        "created": [
+          "levenshtein_distance"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "temp-1",
+        "family": "temperature",
+        "correct": true,
+        "answer": "37.0",
+        "expected": 37.0,
+        "tokens": 8311,
+        "llm_calls": 6,
+        "latency_s": 68.704,
+        "created": [
+          "convert_units"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "dates-2",
+        "family": "dates",
+        "correct": true,
+        "answer": "51",
+        "expected": 51,
+        "tokens": 2308,
+        "llm_calls": 4,
+        "latency_s": 6.066,
+        "created": [],
+        "reused": [
+          "date_difference"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "weekday-1",
+        "family": "dates",
+        "correct": true,
+        "answer": "Friday",
+        "expected": "Friday",
+        "tokens": 3740,
+        "llm_calls": 6,
+        "latency_s": 16.434,
+        "created": [
+          "day_of_week"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "units-2",
+        "family": "units",
+        "correct": true,
+        "answer": "42.16 km",
+        "expected": 42.16,
+        "tokens": 2087,
+        "llm_calls": 4,
+        "latency_s": 6.898,
+        "created": [],
+        "reused": [
+          "convert_units"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "prime-2",
+        "family": "primes",
+        "correct": true,
+        "answer": "47",
+        "expected": 47,
+        "tokens": 3635,
+        "llm_calls": 6,
+        "latency_s": 23.549,
+        "created": [
+          "nth_prime"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "roman-2",
+        "family": "roman",
+        "correct": true,
+        "answer": "2024",
+        "expected": 2024,
+        "tokens": 3790,
+        "llm_calls": 6,
+        "latency_s": 21.996,
+        "created": [
+          "roman_to_int"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "interest-2",
+        "family": "finance",
+        "correct": true,
+        "answer": "4109.05",
+        "expected": 4109.05,
+        "tokens": 2468,
+        "llm_calls": 4,
+        "latency_s": 8.425,
+        "created": [],
+        "reused": [
+          "compute_compound_interest"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "text-2",
+        "family": "text",
+        "correct": true,
+        "answer": "7",
+        "expected": 7,
+        "tokens": 1967,
+        "llm_calls": 4,
+        "latency_s": 7.067,
+        "created": [],
+        "reused": [
+          "count_vowels"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "edit-2",
+        "family": "edit",
+        "correct": true,
+        "answer": "2",
+        "expected": 2,
+        "tokens": 1614,
+        "llm_calls": 4,
+        "latency_s": 5.079,
+        "created": [],
+        "reused": [
+          "levenshtein_distance"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "temp-2",
+        "family": "temperature",
+        "correct": true,
+        "answer": "-40.0",
+        "expected": -40.0,
+        "tokens": 2547,
+        "llm_calls": 4,
+        "latency_s": 13.211,
+        "created": [],
+        "reused": [
+          "convert_units"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "hash-1",
+        "family": "hash",
+        "correct": true,
+        "answer": "c30720927531",
+        "expected": "c30720927531",
+        "tokens": 6891,
+        "llm_calls": 7,
+        "latency_s": 37.097,
+        "created": [
+          "sha256_hex"
+        ],
+        "reused": [],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "weekday-2",
+        "family": "dates",
+        "correct": true,
+        "answer": "Thursday",
+        "expected": "Thursday",
+        "tokens": 1969,
+        "llm_calls": 4,
+        "latency_s": 16.726,
+        "created": [],
+        "reused": [
+          "day_of_week"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "id": "dates-3",
+        "family": "dates",
+        "correct": true,
+        "answer": "2",
+        "expected": 2,
+        "tokens": 2148,
+        "llm_calls": 4,
+        "latency_s": 9.654,
+        "created": [],
+        "reused": [
+          "date_difference"
+        ],
+        "failed": [],
+        "tool_calls": 1
+      },
+      {
+        "_library": {
+          "active_tools": 10,
+          "tool_versions": 11,
+          "lessons": 3,
+          "runs": 20,
+          "total_tokens": 76630,
+          "avg_latency_s": 21.663,
+          "tools_created": 11,
+          "tools_reused": 8,
+          "reuse_rate": 0.421,
+          "tool_calls": 19
+        }
+      }
+    ]
+  }
+}

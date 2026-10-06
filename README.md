@@ -17,8 +17,8 @@ Toolforge is built around closing that gap:
 |---|---|
 | 🧪 **Differential verification** | A second, *independent* implementation is written from the spec alone. Both are fuzzed with schema-driven inputs. Disagreements go to an arbiter whose verdicts become permanent regression tests. |
 | 🛡️ **Two-layer sandbox, red-teamed** | A static AST policy plus a runtime sandbox (PEP 578 audit hook, rlimits, isolated interpreter, scrubbed env). A 35-payload escape corpus runs in CI: **0 escapes**, and the runtime layer alone contains **35/35**. |
-| 🔎 **RAG over its own experience** | Hybrid retrieval (dense + BM25, fused with Reciprocal Rank Fusion) decides *reuse vs. create*, feeds verified tools in as worked examples, and recalls **lessons** distilled from past repairs. |
-| 📈 **Measured, not claimed** | A benchmark compares forging from scratch against a growing library, with RAG and differential-testing ablations: accuracy, tokens, latency, reuse rate. |
+| 🔎 **Hybrid retrieval + LLM judge** | BM25 + embeddings fused with Reciprocal Rank Fusion find candidate tools; an LLM judge decides reuse vs. build. **97% correct reuse decisions** on a labelled 65-need set, with fusion weights measured per embedder. |
+| 📈 **Measured, not claimed** | On a 20-task benchmark, reusing verified tools cut tokens by **75%** and latency by **83%** on repeat tasks, with **100% verified accuracy** (every answer computed by a verified tool). |
 | 🔌 **MCP server** | The forged library is served over the Model Context Protocol, so Claude Desktop, Claude Code or Cursor can call tools your agent wrote, still sandboxed. |
 
 ---
@@ -76,7 +76,9 @@ Any chat model works: the agent speaks a JSON protocol, not a provider-specific 
 |---|---|
 | Gemini | `TOOLFORGE_PROVIDER=gemini`, `GEMINI_API_KEY=…` |
 | Claude | `TOOLFORGE_PROVIDER=anthropic`, `ANTHROPIC_API_KEY=…` |
-| Groq | `TOOLFORGE_PROVIDER=groq`, `GROQ_API_KEY=…`, `TOOLFORGE_MODEL=llama-3.3-70b-versatile` |
+| Groq | `TOOLFORGE_PROVIDER=groq`, `GROQ_API_KEY=…`, `TOOLFORGE_MODEL=openai/gpt-oss-120b` |
+| NVIDIA NIM | `TOOLFORGE_PROVIDER=nvidia`, `NVIDIA_API_KEY=…`, `TOOLFORGE_MODEL=nvidia/nemotron-3-super-120b-a12b` (used for the benchmark) |
+| Cerebras | `TOOLFORGE_PROVIDER=cerebras`, `CEREBRAS_API_KEY=…` |
 | Ollama (local) | `TOOLFORGE_PROVIDER=ollama`, `TOOLFORGE_MODEL=qwen2.5-coder:7b` |
 
 ---
@@ -144,38 +146,93 @@ harness inside a container or microVM (gVisor / Firecracker). See the roadmap.
 
 | What is retrieved | Used for | How |
 |---|---|---|
-| Tools | reuse vs. create | dense cosine + BM25, fused with **Reciprocal Rank Fusion**; auto-reuse above a calibrated threshold, an LLM judge in the grey zone, create below |
+| Tools | reuse vs. create | BM25 + embeddings, fused with **Reciprocal Rank Fusion**; the top 4 go to an **LLM judge**, which picks one or says "build a new tool" |
 | Verified tools | few-shot examples for synthesis | top-k by hybrid rank |
 | Lessons | avoiding repeated mistakes | written by the repairer after every successful repair ("mistake → fix"), committed only if the repair passes |
 
-Why hybrid: embeddings match paraphrases ("date difference" ≈ "days between dates"), while BM25 matches
-exact identifiers that embeddings blur (`sha256`, `levenshtein`). RRF combines the two *rankings*, so the
-raw scores never need to be calibrated against each other. Similarity thresholds are calibrated per
-embedder, because cosine values from different models are not comparable.
+Retrieval is tuned for *recall* (the correct tool is somewhere in the top 4); the judge supplies the
+*precision*. Embedders: an offline feature-hashing embedder (default; deterministic, no API key, used in
+CI) or neural ones (`TOOLFORGE_EMBEDDER=nvidia | gemini | openai`). Queries and stored tools are embedded
+as *query* and *passage* respectively, and switching embedder re-embeds the whole library.
 
-The default embedder is a dependency-free feature-hashing embedder (deterministic, so it's ideal for
-tests). Set `TOOLFORGE_EMBEDDER=gemini` or `openai` for neural embeddings. Stored vectors re-embed
-lazily when the embedder changes.
+#### Retrieval benchmark
+
+`python -m evals.retrieval` scores retrieval in isolation on a hand-labelled set
+([`evals/retrieval_set.json`](evals/retrieval_set.json)): 32 tool cards, 50 needs with a known correct
+tool (worded differently from the cards, with near-miss distractors such as `roman_to_int` vs
+`int_to_roman`), and 15 needs **no** tool satisfies (several deliberate near-misses: SHA-1 when only
+SHA-256 and MD5 exist, consonants when only vowels are counted).
+
+| ranker | hashing embedder | neural (`nvidia/nemotron-3-embed-1b`) |
+|---|---|---|
+| BM25 only | 88% hit@1 | 88% hit@1 |
+| dense only | 84% | **98%** |
+| hybrid, equal weights | **90%** | 92% |
+| hybrid, BM25 weight 0.5 | 84% | **98%** |
+
+All rankers put the correct tool in the top 3 for 98–100% of needs. The finding that changed the code:
+**fusion helps a weak embedder and hurts a strong one.** With hashed vectors, BM25 adds signal; with a
+neural embedder, equal-weight fusion lets BM25 promote word-for-word lookalikes (`roman_to_int` for
+"write 1994 as a Roman numeral"). The BM25 weight is now set per embedder (1.0 for hashing, 0.5 for
+NVIDIA) and is overridable with `TOOLFORGE_LEXICAL_WEIGHT`. These weights were chosen on the same 50
+queries they are reported on, so treat small gaps as noise.
+
+**End to end, with the judge** (`--judge`: the agent's real match step on all 65 needs, neural
+embeddings, `nemotron-3-super-120b-a12b` as judge): **97% of reuse decisions correct.** All 50 needs with
+a matching tool reused the right one (0 wrong tools, 0 duplicates); 13 of the 15 no-tool needs correctly
+got a new tool. The two "errors" are arguable: "weeks between dates" was given `date_difference_in_days`
+(the judge is told trivial conversions are acceptable) and "total mortgage interest" was given `loan_emi`.
 
 ---
 
 ## Benchmark
 
+20 tasks, run once in each mode on `nvidia/nemotron-3-super-120b-a12b` (NVIDIA NIM free tier), 2026-10-06.
+The tasks repeat across families (dates, units, primes, Roman numerals, compound interest, edit distance,
+temperature, hashing) the way a real workload does, and every answer is graded exactly (money to the cent).
+
+| mode | accuracy | verified accuracy | answers without a tool | mean tokens / task | mean latency | tools built | reuse rate |
+|---|---|---|---|---|---|---|---|
+| `fresh`: empty library for every task | 95% | 85% | 3 | 7,067 | 47.8 s | 17 | 0% |
+| `library`: one growing library | **100%** | **100%** | **0** | 5,806 | 36.7 s | 12 | 40% |
+| `library-norag`: same, RAG examples + lessons off | 100% | 95% | 1 | 3,832 | 21.7 s | 11 | 42% |
+
+**On the 8 tasks where the library reused a verified tool, tokens fell 75% (64,318 → 16,121) and latency
+fell 83% (422 s → 70 s) compared with building the tool from scratch.**
+
+![Cumulative token cost: the library line flattens at every task solved by reusing a tool](evals/results/benchmark.png)
+
+How to read it:
+
+- *Verified accuracy* counts an answer only if it is correct **and** came from a sandboxed call to a
+  verified tool. In `fresh` mode three tools failed verification within the repair budget, so the model
+  answered those tasks on its own, and one of those answers was a cent off (14176.24 vs 14176.25).
+  The library run never had to fall back.
+- Each dot is a task a library run answered with a tool it had already built and verified, and each
+  steep step is a first-time build of a new kind of tool. Across all 20 tasks, first builds included,
+  mean tokens fell 18%. Reuse is where the savings come from.
+- **RAG ablation: no measurable gain on this benchmark, and that is reported as found.** With retrieved
+  examples and lessons switched off, the agent built tools just as reliably (0 failed builds either way)
+  and the curves overlap for the first 12 tasks; the token gap comes almost entirely from two expensive
+  first-time builds in the RAG-on run (tasks 13 and 18), which is run-to-run variance. The one
+  unverified RAG-off answer was the planner skipping a tool for "is 7919 prime?", not a build failure.
+  These tasks are easy for a 120B model; RAG is expected to matter on harder, longer-tailed tool
+  requests, which this benchmark does not yet contain.
+- **The ablation exposed a real bug, since fixed.** In the RAG-off run a temperature converter was
+  registered as a new *version* of `convert_units` (same name, same parameters), silently replacing the
+  length converter other tasks relied on. A new version must now pass **every test of the version it
+  replaces** (and inherits them); otherwise it is stored under a new name.
+- This is a single run per mode, and LLM cost varies from run to run (one first-time build took 30k
+  tokens). Treat the percentages as indicative, not precise.
+
+Reproduce it, and add the ablations:
+
 ```bash
-python -m evals.benchmark --delay 2      # 20 tasks × 4 modes; --limit/--modes to trim
+python -m evals.benchmark --modes fresh library --delay 2       # saves after every task; re-run to resume
+python -m evals.benchmark --modes library-norag no-diff         # ablations; merged into saved results
+python -m evals.benchmark --report                              # rebuild the table and chart from saved results
+python -m evals.retrieval --embedder nvidia --judge             # retrieval + end-to-end reuse decisions
 ```
-
-The 20 tasks are deliberately repetitive across families (dates, units, primes, Roman numerals,
-compound interest, edit distance, …), the way a real workload is. Modes:
-
-- `fresh`: empty library per task (always forges). This is the baseline.
-- `library`: one shared library with RAG.
-- `library-norag`: ablation with RAG off.
-- `no-diff`: ablation with differential verification off.
-
-The run writes [`evals/results/benchmark.md`](evals/results) (table) and `benchmark.png` (cumulative
-token cost). **Run it with your model and paste the table here.** The numbers depend on the model, so
-they are not pre-filled.
 
 ## Use the library from Claude Desktop, Claude Code or Cursor (MCP)
 
@@ -225,8 +282,8 @@ toolforge/
   curator.py       duplicate + under-performer detection
   mcp_server.py    MCP server over the library
   api.py, cli.py   FastAPI service and CLI
-evals/             benchmark (reuse + ablations), red-team corpus, tasks
-tests/             60 offline tests driven by a scripted LLM (no API key needed)
+evals/             task benchmark (reuse + ablations), retrieval benchmark, red-team corpus
+tests/             96 offline tests driven by a scripted LLM (no API key needed)
 ```
 
 ## Design decisions
@@ -236,6 +293,10 @@ tests/             60 offline tests driven by a scripted LLM (no API key needed)
 - **Allow-list, not deny-list, for imports.** Unknown modules fail closed.
 - **The arbiter adds tests; it doesn't pick a winner.** Turning disagreements into tests makes verification cumulative: every bug found strengthens the suite permanently.
 - **Lessons are committed only after a repair passes,** so the memory isn't polluted with fixes that didn't work.
+- **A new version must pass the old version's tests.** Same name and same parameters is not proof of the
+  same job; the regression gate is what keeps a growing library trustworthy.
+- **Measure fusion, don't assume it.** Hybrid retrieval is the default story, but with a strong embedder
+  equal-weight fusion lowered hit@1 from 98% to 92%; the weight is now per embedder.
 - **Versioned registry with name-collision handling.** A new, incompatible tool that happens to share a name gets `name_2` instead of clobbering the original.
 
 ## Roadmap
