@@ -1,0 +1,399 @@
+{
+  "offline": [
+    {
+      "payload": "builtin open",
+      "static_blocked": true,
+      "static_rules": [
+        "builtin"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/secret.txt' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "io.open",
+      "static_blocked": true,
+      "static_rules": [
+        "attribute"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/secret.txt' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "pathlib read_text",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/secret.txt' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "os.open + os.read",
+      "static_blocked": true,
+      "static_rules": [
+        "attribute",
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/secret.txt' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "codecs.open",
+      "static_blocked": true,
+      "static_rules": [
+        "attribute",
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/secret.txt' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "linecache",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "returned \"\"",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "/proc/self/environ",
+      "static_blocked": true,
+      "static_rules": [
+        "builtin"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/proc/self/environ' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "parent /proc environ",
+      "static_blocked": true,
+      "static_rules": [
+        "builtin",
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/proc/764/environ' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "os.environ leak",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "returned null",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "os.popen",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] opening file descriptors is blocked",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "os.system",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] blocked operation: os.system",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "subprocess",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] opening file descriptors is blocked",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "__import__",
+      "static_blocked": true,
+      "static_rules": [
+        "builtin"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] opening file descriptors is blocked",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "importlib",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] opening file descriptors is blocked",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "eval",
+      "static_blocked": true,
+      "static_rules": [
+        "builtin"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/secret.txt' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "exec",
+      "static_blocked": true,
+      "static_rules": [
+        "builtin"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/secret.txt' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "getattr builtins",
+      "static_blocked": true,
+      "static_rules": [
+        "builtin",
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/secret.txt' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "subclasses walk",
+      "static_blocked": true,
+      "static_rules": [
+        "dunder"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] opening file descriptors is blocked",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "format-string globals",
+      "static_blocked": true,
+      "static_rules": [
+        "dunder"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "returned \"{'__name__': 'toolforge_tool', '__builtins__': {'__name__':",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "sys.modules",
+      "static_blocked": true,
+      "static_rules": [
+        "attribute",
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/secret.txt' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "ctypes system",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] blocked operation: ctypes.dlopen",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "write marker",
+      "static_blocked": true,
+      "static_rules": [
+        "builtin"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/marker-6af650f1' (w)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "os.open O_CREAT",
+      "static_blocked": true,
+      "static_rules": [
+        "attribute",
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/marker-cfab36f7' (r)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "shutil copy",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] blocked operation: shutil.copyfile",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "tempfile",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "FileNotFoundError: [Errno 2] No usable temporary directory found in ['/tmp', '/var/tmp', '/usr/tmp', '/tmp/toolforge-6s_",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "sqlite3 file",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] blocked operation: sqlite3.connect",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "socket",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] blocked operation: socket.getaddrinfo",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "urllib",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] blocked operation: urllib.Request",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "os.listdir home",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] directory listing blocked: '/root'",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "glob",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] blocked operation: glob.glob",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "fork",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] blocked operation: os.fork",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "pickle reduce",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] blocked operation: os.system",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "zipfile",
+      "static_blocked": true,
+      "static_rules": [
+        "import"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-oa_xx8nj/marker-d3c11763' (w)",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "time.sleep stall",
+      "static_blocked": true,
+      "static_rules": [
+        "attribute"
+      ],
+      "sandbox_blocked": true,
+      "sandbox_detail": "timed out after 3.0s",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    },
+    {
+      "payload": "memory bomb",
+      "static_blocked": false,
+      "static_rules": [],
+      "sandbox_blocked": true,
+      "sandbox_detail": "MemoryError: ",
+      "escaped_sandbox_only": false,
+      "escaped_combined": false
+    }
+  ],
+  "summary": {
+    "payloads": 35,
+    "static_blocked": 34,
+    "sandbox_contained": 35,
+    "combined_escapes": 0
+  }
+}

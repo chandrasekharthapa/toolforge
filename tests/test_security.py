@@ -1,0 +1,85 @@
+"""Both security layers, tested independently: static policy and runtime sandbox."""
+
+import pytest
+
+from toolforge.models import TestCase
+from toolforge.safety import check_code
+from toolforge.sandbox import Sandbox
+
+sandbox = Sandbox(timeout=3, memory_mb=256)
+
+
+def rules(code: str, name: str = "f") -> set[str]:
+    return {v.rule for v in check_code(code, name)}
+
+
+@pytest.mark.parametrize("code, rule", [
+    ("import os\ndef f(): return os.getcwd()", "import"),
+    ("import subprocess\ndef f(): pass", "import"),
+    ("from urllib import request\ndef f(): pass", "import"),
+    ("def f(): return eval('1+1')", "builtin"),
+    ("def f(): return open('/etc/passwd').read()", "builtin"),
+    ("def f(): return __import__('os')", "builtin"),
+    ("def f(): return ().__class__.__base__.__subclasses__()", "dunder"),
+    ("def f(): return getattr(f, 'x')", "builtin"),
+    ("import io\ndef f(): return io.open('x')", "attribute"),
+    ("import time\ndef f(): time.sleep(100)", "attribute"),
+    ("def f(): return '{0.__class__}'.format(1)", "dunder"),
+    ("def f(x): return x._secret", "private"),
+    ("async def f(): pass", "async"),
+    ("print('side effect at import')\ndef f(): pass", "contract"),
+    ("def g(): pass", "contract"),
+    ("def f(:", "syntax"),
+])
+def test_static_policy_rejects(code, rule):
+    assert rule in rules(code)
+
+
+def test_static_policy_accepts_ordinary_code():
+    code = ("import math, re\nfrom collections import Counter\nfrom datetime import date\n"
+            "PI = math.pi\n\ndef f(text: str) -> dict:\n    \"\"\"doc\"\"\"\n"
+            "    return dict(Counter(re.findall(r'\\w+', text.lower())))\n")
+    assert check_code(code, "f") == []
+
+
+@pytest.mark.parametrize("code", [
+    "def f():\n    return open('/etc/passwd').read()",
+    "def f():\n    open('pwned.txt', 'w').write('x')",
+    "def f():\n    import socket\n    socket.create_connection(('example.com', 80))",
+    "def f():\n    import os\n    os.system('id')",
+    "def f():\n    import os\n    return os.listdir('/')",
+    "def f():\n    import subprocess\n    subprocess.run(['id'])",
+])
+def test_sandbox_blocks_side_effects_even_if_static_check_is_bypassed(code):
+    result = sandbox.call(code, "f", {})
+    assert not result.ok and result.blocked_by_sandbox, result.error
+
+
+def test_sandbox_enforces_timeout():
+    result = Sandbox(timeout=1).call("def f():\n    while True:\n        pass", "f", {})
+    assert not result.ok and "timed out" in result.error
+
+
+def test_sandbox_enforces_memory_limit():
+    result = sandbox.call("def f():\n    return len([0] * (10 ** 9))", "f", {})
+    assert not result.ok
+
+
+def test_sandbox_runs_tests_with_float_tolerance_and_reports_failures():
+    code = "def add(a: float, b: float) -> float:\n    return a + b\n"
+    tests = [TestCase(args=[0.1, 0.2], expected=0.3), TestCase(kwargs={"a": 1, "b": 1}, expected=3)]
+    result = sandbox.run_tests(code, "add", tests)
+    assert [r["passed"] for r in result.results] == [True, False]
+    assert "test #1: got 2, expected 3" in result.failure_report()
+
+
+def test_sandbox_allows_stdlib_that_reads_its_own_data():
+    code = ("from zoneinfo import ZoneInfo\nfrom datetime import datetime\n"
+            "def f(tz: str) -> str:\n    return datetime(2024, 1, 1, tzinfo=ZoneInfo(tz)).isoformat()\n")
+    result = sandbox.call(code, "f", {"tz": "Asia/Tokyo"})
+    assert result.ok and result.result.endswith("+09:00")
+
+
+def test_batch_reports_per_input_errors():
+    result = sandbox.batch("def f(n):\n    return 10 // n", "f", [{"n": 2}, {"n": 0}])
+    assert result.outputs == [{"ok": True, "value": 5}, {"ok": False, "error": "ZeroDivisionError"}]

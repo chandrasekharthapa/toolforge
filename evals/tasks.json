@@ -1,0 +1,22 @@
+[
+  {"id": "dates-1", "family": "dates", "task": "How many days are there between 2024-01-15 and 2024-03-01?", "expected": 46},
+  {"id": "units-1", "family": "units", "task": "Convert 100 kilometers to miles, rounded to 2 decimal places.", "expected": 62.14},
+  {"id": "prime-1", "family": "primes", "task": "Is 7919 a prime number? Answer yes or no.", "expected": "yes"},
+  {"id": "roman-1", "family": "roman", "task": "Write 1994 in Roman numerals.", "expected": "MCMXCIV"},
+  {"id": "interest-1", "family": "finance", "task": "What is the final amount when 10000 is invested at 7% annual interest compounded monthly for 5 years? Round to 2 decimals.", "expected": 14176.25},
+  {"id": "text-1", "family": "text", "task": "How many vowels are in the sentence 'The quick brown fox jumps over the lazy dog'?", "expected": 11},
+  {"id": "edit-1", "family": "edit", "task": "What is the Levenshtein distance between 'kitten' and 'sitting'?", "expected": 3},
+  {"id": "temp-1", "family": "temperature", "task": "Convert 98.6 degrees Fahrenheit to Celsius, rounded to 1 decimal.", "expected": 37.0},
+  {"id": "dates-2", "family": "dates", "task": "How many days are between 2023-12-25 and 2024-02-14?", "expected": 51},
+  {"id": "weekday-1", "family": "dates", "task": "What day of the week was 1999-12-31?", "expected": "Friday"},
+  {"id": "units-2", "family": "units", "task": "Convert 26.2 miles to kilometers, rounded to 2 decimal places.", "expected": 42.16},
+  {"id": "prime-2", "family": "primes", "task": "What is the 15th prime number?", "expected": 47},
+  {"id": "roman-2", "family": "roman", "task": "What integer does the Roman numeral MMXXIV represent?", "expected": 2024},
+  {"id": "interest-2", "family": "finance", "task": "What is the final amount when 2500 is invested at 5% annual interest compounded quarterly for 10 years? Round to 2 decimals.", "expected": 4109.05},
+  {"id": "text-2", "family": "text", "task": "Count the vowels in 'Programming in Python is fun'.", "expected": 7},
+  {"id": "edit-2", "family": "edit", "task": "What is the Levenshtein distance between 'flaw' and 'lawn'?", "expected": 2},
+  {"id": "temp-2", "family": "temperature", "task": "Convert -40 degrees Celsius to Fahrenheit.", "expected": -40.0},
+  {"id": "hash-1", "family": "hash", "task": "Give the first 12 hex characters of the SHA-256 hash of the string 'toolforge'.", "expected": "c30720927531"},
+  {"id": "weekday-2", "family": "dates", "task": "What day of the week will 2030-07-04 be?", "expected": "Thursday"},
+  {"id": "dates-3", "family": "dates", "task": "How many days are there between 2000-02-28 and 2000-03-01?", "expected": 2}
+]
