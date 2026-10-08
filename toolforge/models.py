@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import keyword
 import re
 from typing import Any, Literal
@@ -62,6 +63,18 @@ class ToolDraft(BaseModel):
         v.setdefault("properties", {})
         return v
 
+    @field_validator("code")
+    @classmethod
+    def _unescape_flattened_code(cls, v: str) -> str:
+        """Some models JSON-escape the source twice, so it arrives as ONE line full of literal ``\\n``.
+        A real function spans several lines, so a newline-free body with ``\\n`` in it is unescaped."""
+        if "\n" not in v.strip() and "\\n" in v:
+            try:  # undo exactly one level of JSON string escaping
+                return json.loads('"' + v.replace('"', '\\"').replace('\\\\"', '\\"') + '"')
+            except ValueError:
+                return v.replace("\\n", "\n").replace("\\t", "\t")
+        return v
+
     @model_validator(mode="after")
     def _unwrap_dict_args(self) -> ToolDraft:
         """``args: [{"start": .., "end": ..}]`` for a multi-parameter function is almost always
@@ -107,6 +120,8 @@ class Tool(ToolDraft):
     created_at: str = ""
     origin_task: str = ""
     verification: Verification = Field(default_factory=Verification)
+    #: a worked call ({"args", "result"}) from the run that built the tool, shown to callers
+    example: dict[str, Any] | None = None
 
     @property
     def success_rate(self) -> float | None:
@@ -114,7 +129,10 @@ class Tool(ToolDraft):
 
     def card(self) -> dict[str, Any]:
         """Compact view the planner/executor sees."""
-        return {"name": self.name, "description": self.description, "parameters": self.parameters}
+        card = {"name": self.name, "description": self.description, "parameters": self.parameters}
+        if self.example:
+            card["example_call"] = self.example
+        return card
 
 
 class Need(BaseModel):
@@ -139,10 +157,14 @@ class RunResult(BaseModel):
     created: list[str] = Field(default_factory=list)
     reused: list[str] = Field(default_factory=list)
     failed_needs: list[str] = Field(default_factory=list)
+    #: tools sent back to the maker after failing in real use, and re-verified as a new version
+    repaired: list[str] = Field(default_factory=list)
     tool_calls: list[dict[str, Any]] = Field(default_factory=list)
     llm_calls: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    #: of the tokens above, those spent on the tool-USER model (0 when there is no maker/user split)
+    user_tokens: int = 0
     latency_s: float = 0.0
     trace: list[dict[str, Any]] = Field(default_factory=list)
 

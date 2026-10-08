@@ -1,5 +1,5 @@
 {
-  "backend": "process + audit hook",
+  "backend": "docker + audit hook",
   "offline": [
     {
       "payload": "builtin open",
@@ -8,7 +8,7 @@
         "builtin"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/secret.txt' (r)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\secret.txt'",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -19,7 +19,7 @@
         "attribute"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/secret.txt' (r)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\secret.txt'",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -30,7 +30,7 @@
         "import"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/secret.txt' (r)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\secret.txt'",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -42,7 +42,7 @@
         "import"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/secret.txt' (r)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\secret.txt'",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -54,7 +54,7 @@
         "import"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/secret.txt' (r)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\secret.txt'",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -88,7 +88,7 @@
         "import"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/proc/7694/environ' (r)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/proc/0/environ' (r)",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -165,7 +165,7 @@
         "builtin"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/secret.txt' (r)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\secret.txt'",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -176,7 +176,7 @@
         "builtin"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/secret.txt' (r)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\secret.txt'",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -188,7 +188,7 @@
         "import"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/secret.txt' (r)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\secret.txt'",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -222,7 +222,7 @@
         "import"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/secret.txt' (r)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\secret.txt'",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -244,7 +244,7 @@
         "builtin"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/marker-3ab65254' (w)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\marker-801a",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -256,7 +256,7 @@
         "import"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/marker-d6be1ec7' (r)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\marker-6164",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -278,7 +278,7 @@
         "import"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "FileNotFoundError: [Errno 2] No usable temporary directory found in ['/tmp', '/var/tmp', '/usr/tmp', '/tmp/toolforge-w3w",
+      "sandbox_detail": "FileNotFoundError: [Errno 2] No usable temporary directory found in ['/tmp', '/var/tmp', '/usr/tmp', '/tmp']",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -322,7 +322,7 @@
         "import"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] directory listing blocked: '/root'",
+      "sandbox_detail": "SandboxViolation: [sandbox] directory listing blocked: '/nonexistent'",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -366,7 +366,7 @@
         "import"
       ],
       "sandbox_blocked": true,
-      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: '/tmp/tf-canary-w5wgbvq0/marker-98642b8e' (w)",
+      "sandbox_detail": "SandboxViolation: [sandbox] file access blocked: 'C:\\\\Users\\\\KIIT\\\\AppData\\\\Local\\\\Temp\\\\tf-canary-a5o0kqo2\\\\marker-ca7e",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     },
@@ -386,7 +386,7 @@
       "static_blocked": false,
       "static_rules": [],
       "sandbox_blocked": true,
-      "sandbox_detail": "MemoryError: ",
+      "sandbox_detail": "process killed (memory or CPU limit?); exit=137",
       "escaped_sandbox_only": false,
       "escaped_combined": false
     }

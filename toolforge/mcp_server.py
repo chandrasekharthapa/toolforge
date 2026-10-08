@@ -22,7 +22,7 @@ from mcp.server.lowlevel import Server
 
 from .config import Settings
 from .registry import Registry
-from .sandbox import Sandbox
+from .sandbox import Sandbox, make_sandbox
 
 SOLVE_TOOL = "toolforge_solve"
 
@@ -39,7 +39,7 @@ def build_server(settings: Settings | None = None, *, forge: bool = False,
                  registry: Registry | None = None, sandbox: Sandbox | None = None) -> Server:
     settings = settings or Settings()
     registry = registry or Registry(settings.db_path)
-    sandbox = sandbox or Sandbox(settings.sandbox_timeout, settings.sandbox_memory_mb)
+    sandbox = sandbox or make_sandbox(settings)
     agent = None
 
     async def list_tools(ctx, params) -> types.ListToolsResult:

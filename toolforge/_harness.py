@@ -133,7 +133,10 @@ def main():
             zoneinfo.ZoneInfo(tz)
     except Exception:  # noqa: BLE001
         pass
-    sys.addaudithook(_audit)  # from here on, side effects are denied
+    # The parent may switch the hook off only to measure a container on its own (red-team
+    # --no-audit-hook, Docker backend only). Generated code never controls the request.
+    if request.get("audit_hook", True):
+        sys.addaudithook(_audit)  # from here on, side effects are denied
 
     namespace = {"__name__": "toolforge_tool"}
     captured = io.StringIO()

@@ -25,6 +25,7 @@ anthropic = ["anthropic>=0.40"]
 api = ["fastapi>=0.110", "uvicorn>=0.29"]
 mcp = ["mcp>=2.2"]
 eval = ["matplotlib>=3.8"]
+reranker = ["torch>=2.2", "transformers>=4.40"]
 dev = ["pytest>=8", "ruff>=0.6", "fastapi>=0.110", "uvicorn>=0.29", "mcp>=2.2", "matplotlib>=3.8"]
 all = ["toolforge[gemini,anthropic,api,mcp,eval]"]
 

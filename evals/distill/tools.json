@@ -1,0 +1,1049 @@
+{
+ "kept": [
+  {
+   "name": "reverse_string",
+   "description": "Returns the input string with its characters in reverse order.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   },
+   "nearest_eval_tool": "word_count",
+   "nearest_cosine": 0.343
+  },
+  {
+   "name": "capitalize_title",
+   "description": "Capitalizes the first letter of each word in the input string while leaving other characters unchanged.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   },
+   "nearest_eval_tool": "word_count",
+   "nearest_cosine": 0.329
+  },
+  {
+   "name": "extract_hashtags",
+   "description": "Finds and returns all hashtag tokens (words prefixed with #) from the input string as a list.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   },
+   "nearest_eval_tool": "word_count",
+   "nearest_cosine": 0.319
+  },
+  {
+   "name": "normalize_whitespace",
+   "description": "Collapses consecutive whitespace characters into a single space and trims leading/trailing whitespace.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   },
+   "nearest_eval_tool": "word_count",
+   "nearest_cosine": 0.368
+  },
+  {
+   "name": "euler_totient",
+   "description": "Computes Euler's totient function \u03c6(n), the count of positive integers \u2264 n that are coprime to n. Returns an integer.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "n": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "n"
+    ]
+   },
+   "nearest_eval_tool": "prime_factors",
+   "nearest_cosine": 0.397
+  },
+  {
+   "name": "mobius_function",
+   "description": "Computes the M\u00f6bius function \u03bc(n) for integer n \u2265 1, returning -1 if n has an odd number of distinct prime factors, 1 if even number, and 0 if any prime factor squared divides n. Returns -1, 0, or 1.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "n": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "n"
+    ]
+   },
+   "nearest_eval_tool": "fibonacci",
+   "nearest_cosine": 0.285
+  },
+  {
+   "name": "sum_of_divisors",
+   "description": "Calculates the sum of all positive divisors of n, denoted \u03c3(n). Returns the integer sum.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "n": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "n"
+    ]
+   },
+   "nearest_eval_tool": "prime_factors",
+   "nearest_cosine": 0.381
+  },
+  {
+   "name": "modular_inverse",
+   "description": "Finds the modular multiplicative inverse of a modulo m, i.e., an integer x such that (a * x) \u2261 1 (mod m). Assumes a and m are coprime; returns the inverse or raises an error if none exists.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "integer"
+     },
+     "m": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "a",
+     "m"
+    ]
+   },
+   "nearest_eval_tool": "int_to_roman",
+   "nearest_cosine": 0.145
+  },
+  {
+   "name": "area_of_circle",
+   "description": "Computes the area of a circle given its radius and returns the result as a floating\u2011point number.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "radius": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "radius"
+    ]
+   },
+   "nearest_eval_tool": "roman_to_int",
+   "nearest_cosine": 0.271
+  },
+  {
+   "name": "perimeter_of_rectangle",
+   "description": "Calculates the perimeter of a rectangle from its width and height and returns the perimeter as a floating\u2011point number.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "width": {
+      "type": "number"
+     },
+     "height": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "width",
+     "height"
+    ]
+   },
+   "nearest_eval_tool": "bmi",
+   "nearest_cosine": 0.383
+  },
+  {
+   "name": "volume_of_sphere",
+   "description": "Determines the volume of a sphere given its radius and returns the volume as a floating\u2011point number.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "radius": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "radius"
+    ]
+   },
+   "nearest_eval_tool": "roman_to_int",
+   "nearest_cosine": 0.252
+  },
+  {
+   "name": "distance_between_2d_points",
+   "description": "Returns the Euclidean distance between two points in a 2\u2011dimensional plane given their coordinates.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "x1": {
+      "type": "number"
+     },
+     "y1": {
+      "type": "number"
+     },
+     "x2": {
+      "type": "number"
+     },
+     "y2": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "x1",
+     "y1",
+     "x2",
+     "y2"
+    ]
+   },
+   "nearest_eval_tool": "date_difference_in_days",
+   "nearest_cosine": 0.309
+  },
+  {
+   "name": "convert_length",
+   "description": "Converts a length value from one unit (e.g., mm, cm, m, km, in, ft, yd, mi) to another, returning the converted value as a float.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "value": {
+      "type": "number"
+     },
+     "from_unit": {
+      "type": "string"
+     },
+     "to_unit": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "value",
+     "from_unit",
+     "to_unit"
+    ]
+   },
+   "nearest_eval_tool": "convert_units",
+   "nearest_cosine": 0.651
+  },
+  {
+   "name": "convert_volume",
+   "description": "Converts a volume value between units such as ml, l, cm\u00b3, m\u00b3, tsp, tbsp, fl oz, cup, pt, qt, gal, returning the result as a float.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "value": {
+      "type": "number"
+     },
+     "from_unit": {
+      "type": "string"
+     },
+     "to_unit": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "value",
+     "from_unit",
+     "to_unit"
+    ]
+   },
+   "nearest_eval_tool": "convert_units",
+   "nearest_cosine": 0.603
+  },
+  {
+   "name": "convert_mass",
+   "description": "Converts a mass value among units like mg, g, kg, t, oz, lb, stone, returning the converted value as a float.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "value": {
+      "type": "number"
+     },
+     "from_unit": {
+      "type": "string"
+     },
+     "to_unit": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "value",
+     "from_unit",
+     "to_unit"
+    ]
+   },
+   "nearest_eval_tool": "convert_units",
+   "nearest_cosine": 0.572
+  },
+  {
+   "name": "convert_time",
+   "description": "Converts a time duration between units such as s, min, h, day, week, month (30 days), year (365 days), returning the result as a float.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "value": {
+      "type": "number"
+     },
+     "from_unit": {
+      "type": "string"
+     },
+     "to_unit": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "value",
+     "from_unit",
+     "to_unit"
+    ]
+   },
+   "nearest_eval_tool": "convert_units",
+   "nearest_cosine": 0.511
+  },
+  {
+   "name": "is_leap_year",
+   "description": "Determines whether a given year is a leap year in the Gregorian calendar. Returns true if leap year, false otherwise.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "year": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "year"
+    ]
+   },
+   "nearest_eval_tool": "is_prime",
+   "nearest_cosine": 0.45
+  },
+  {
+   "name": "week_of_year",
+   "description": "Returns the ISO week number (1\u201153) for a given date. Input date must be in ISO\u20118601 format (YYYY\u2011MM\u2011DD).",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "date": {
+      "type": "string",
+      "format": "date"
+     }
+    },
+    "required": [
+     "date"
+    ]
+   },
+   "nearest_eval_tool": "day_of_week",
+   "nearest_cosine": 0.5
+  },
+  {
+   "name": "days_in_month",
+   "description": "Returns the number of days in a specified month and year. Accounts for leap years in February.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "year": {
+      "type": "integer"
+     },
+     "month": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 12
+     }
+    },
+    "required": [
+     "year",
+     "month"
+    ]
+   },
+   "nearest_eval_tool": "add_days_to_date",
+   "nearest_cosine": 0.2
+  },
+  {
+   "name": "time_to_next_birthday",
+   "description": "Calculates the number of days from today (or a reference date) until the next occurrence of a given birthday. Input birthday in ISO\u20118601 format; optionally provide a reference date.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "birthdate": {
+      "type": "string",
+      "format": "date"
+     },
+     "reference_date": {
+      "type": "string",
+      "format": "date"
+     }
+    },
+    "required": [
+     "birthdate"
+    ]
+   },
+   "nearest_eval_tool": "add_days_to_date",
+   "nearest_cosine": 0.409
+  },
+  {
+   "name": "debt_to_income_ratio",
+   "description": "Calculates the debt-to-income ratio by dividing total monthly debt payments by monthly gross income, returning a decimal ratio.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "monthly_debt_payments": {
+      "type": "number"
+     },
+     "monthly_gross_income": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "monthly_debt_payments",
+     "monthly_gross_income"
+    ]
+   },
+   "nearest_eval_tool": "loan_emi",
+   "nearest_cosine": 0.212
+  },
+  {
+   "name": "loan_to_value_ratio",
+   "description": "Computes the loan-to-value (LTV) ratio as the loan amount divided by the appraised property value, expressed as a decimal.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "loan_amount": {
+      "type": "number"
+     },
+     "property_value": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "loan_amount",
+     "property_value"
+    ]
+   },
+   "nearest_eval_tool": "loan_emi",
+   "nearest_cosine": 0.245
+  },
+  {
+   "name": "net_worth_calculator",
+   "description": "Determines net worth by subtracting total liabilities from total assets and returns the result.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "total_assets": {
+      "type": "number"
+     },
+     "total_liabilities": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "total_assets",
+     "total_liabilities"
+    ]
+   },
+   "nearest_eval_tool": "bmi",
+   "nearest_cosine": 0.156
+  },
+  {
+   "name": "apr_calculator",
+   "description": "Converts a nominal interest rate and compounding frequency into an effective annual percentage rate (APR).",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "nominal_rate": {
+      "type": "number",
+      "description": "Nominal annual interest rate as a decimal (e.g., 0.05 for 5%)"
+     },
+     "compounding_per_year": {
+      "type": "integer",
+      "description": "Number of compounding periods per year"
+     }
+    },
+    "required": [
+     "nominal_rate",
+     "compounding_per_year"
+    ]
+   },
+   "nearest_eval_tool": "compound_interest",
+   "nearest_cosine": 0.469
+  },
+  {
+   "name": "median",
+   "description": "Returns the median (middle value) of a list of numbers. For even-length lists, it returns the average of the two central values.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "numbers": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      }
+     }
+    },
+    "required": [
+     "numbers"
+    ]
+   },
+   "nearest_eval_tool": "mean_median_mode",
+   "nearest_cosine": 0.417
+  },
+  {
+   "name": "variance",
+   "description": "Calculates the population variance of a list of numbers, measuring the average squared deviation from the mean.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "numbers": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      }
+     }
+    },
+    "required": [
+     "numbers"
+    ]
+   },
+   "nearest_eval_tool": "standard_deviation",
+   "nearest_cosine": 0.57
+  },
+  {
+   "name": "interquartile_range",
+   "description": "Computes the interquartile range (IQR) as the difference between the 75th and 25th percentiles of a list of numbers.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "numbers": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      }
+     }
+    },
+    "required": [
+     "numbers"
+    ]
+   },
+   "nearest_eval_tool": "mean_median_mode",
+   "nearest_cosine": 0.281
+  },
+  {
+   "name": "percentile_rank",
+   "description": "Given a value and a list of numbers, returns the percentile rank of the value (percentage of data points less than or equal to it).",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "numbers": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      }
+     },
+     "value": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "numbers",
+     "value"
+    ]
+   },
+   "nearest_eval_tool": "standard_deviation",
+   "nearest_cosine": 0.233
+  },
+  {
+   "name": "crc32_checksum",
+   "description": "Computes the CRC\u201132 checksum of the input string and returns it as an unsigned 32\u2011bit integer.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "data"
+    ]
+   },
+   "nearest_eval_tool": "sha256_hex",
+   "nearest_cosine": 0.264
+  },
+  {
+   "name": "adler32_checksum",
+   "description": "Computes the Adler\u201132 checksum of the input string and returns it as an unsigned 32\u2011bit integer.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "data"
+    ]
+   },
+   "nearest_eval_tool": "sha256_hex",
+   "nearest_cosine": 0.281
+  },
+  {
+   "name": "sha1_hex",
+   "description": "Calculates the SHA\u20111 hash of the input string and returns the digest as a lowercase hexadecimal string.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "data"
+    ]
+   },
+   "nearest_eval_tool": "sha256_hex",
+   "nearest_cosine": 0.549
+  },
+  {
+   "name": "base32_encode",
+   "description": "Encodes the input string using Base32 (RFC 4648) and returns the encoded ASCII string.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "data"
+    ]
+   },
+   "nearest_eval_tool": "base64_encode",
+   "nearest_cosine": 0.474
+  },
+  {
+   "name": "binary_search",
+   "description": "Performs binary search on a sorted list of numbers and returns the index of the target value, or -1 if the target is not present.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "sorted_list": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      }
+     },
+     "target": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "sorted_list",
+     "target"
+    ]
+   },
+   "nearest_eval_tool": "standard_deviation",
+   "nearest_cosine": 0.133
+  },
+  {
+   "name": "merge_sorted_lists",
+   "description": "Merges two already sorted lists into a single sorted list while preserving the order of elements.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "list1": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      }
+     },
+     "list2": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      }
+     }
+    },
+    "required": [
+     "list1",
+     "list2"
+    ]
+   },
+   "nearest_eval_tool": "mean_median_mode",
+   "nearest_cosine": 0.156
+  },
+  {
+   "name": "rotate_list",
+   "description": "Rotates a list to the right by k positions (negative k rotates left) and returns the resulting list.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "lst": {
+      "type": "array",
+      "items": {}
+     },
+     "k": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "lst",
+     "k"
+    ]
+   },
+   "nearest_eval_tool": "add_days_to_date",
+   "nearest_cosine": 0.155
+  },
+  {
+   "name": "find_longest_increasing_subsequence",
+   "description": "Computes the longest strictly increasing subsequence of a list of numbers and returns that subsequence as a list.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "numbers": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      }
+     }
+    },
+    "required": [
+     "numbers"
+    ]
+   },
+   "nearest_eval_tool": "mean_median_mode",
+   "nearest_cosine": 0.195
+  },
+  {
+   "name": "hex_to_rgb",
+   "description": "Converts a hexadecimal colour string (e.g., '#FF5733' or 'FF5733') to its corresponding RGB integer values.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "hex": {
+      "type": "string",
+      "description": "Hex colour code, with or without leading #."
+     }
+    },
+    "required": [
+     "hex"
+    ]
+   },
+   "nearest_eval_tool": "roman_to_int",
+   "nearest_cosine": 0.408
+  },
+  {
+   "name": "rgb_to_hex",
+   "description": "Converts red, green, and blue integer components (0-255) to a hexadecimal colour string prefixed with '#'.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "r": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255,
+      "description": "Red component."
+     },
+     "g": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255,
+      "description": "Green component."
+     },
+     "b": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255,
+      "description": "Blue component."
+     }
+    },
+    "required": [
+     "r",
+     "g",
+     "b"
+    ]
+   },
+   "nearest_eval_tool": "md5_hex",
+   "nearest_cosine": 0.261
+  },
+  {
+   "name": "colour_name_to_hex",
+   "description": "Maps a standard CSS colour name (e.g., 'tomato', 'steelblue') to its hexadecimal representation.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string",
+      "description": "CSS colour name, case-insensitive."
+     }
+    },
+    "required": [
+     "name"
+    ]
+   },
+   "nearest_eval_tool": "day_of_week",
+   "nearest_cosine": 0.255
+  },
+  {
+   "name": "calculate_contrast_ratio",
+   "description": "Computes the WCAG contrast ratio between two colours given as hex strings, returning a float \u2265 1.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "color1": {
+      "type": "string",
+      "description": "First hex colour code."
+     },
+     "color2": {
+      "type": "string",
+      "description": "Second hex colour code."
+     }
+    },
+    "required": [
+     "color1",
+     "color2"
+    ]
+   },
+   "nearest_eval_tool": "jaccard_similarity",
+   "nearest_cosine": 0.165
+  },
+  {
+   "name": "ohms_law_voltage",
+   "description": "Computes the voltage across a resistor using Ohm's law (V = I * R). Returns the voltage in volts given current in amperes and resistance in ohms.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "current": {
+      "type": "number"
+     },
+     "resistance": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "current",
+     "resistance"
+    ]
+   },
+   "nearest_eval_tool": "bmi",
+   "nearest_cosine": 0.207
+  },
+  {
+   "name": "kinetic_energy",
+   "description": "Calculates the kinetic energy of an object using the formula KE = 0.5 * m * v^2. Returns energy in joules given mass in kilograms and velocity in meters per second.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "mass": {
+      "type": "number"
+     },
+     "velocity": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "mass",
+     "velocity"
+    ]
+   },
+   "nearest_eval_tool": "bmi",
+   "nearest_cosine": 0.245
+  },
+  {
+   "name": "gravitational_potential_energy",
+   "description": "Computes gravitational potential energy (U = m * g * h). Returns energy in joules given mass in kilograms, height in meters, and optional gravitational acceleration (defaults to 9.81 m/s^2).",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "mass": {
+      "type": "number"
+     },
+     "height": {
+      "type": "number"
+     },
+     "gravity": {
+      "type": "number",
+      "default": 9.81
+     }
+    },
+    "required": [
+     "mass",
+     "height"
+    ]
+   },
+   "nearest_eval_tool": "bmi",
+   "nearest_cosine": 0.233
+  },
+  {
+   "name": "resonant_frequency_lc",
+   "description": "Calculates the resonant frequency of an LC circuit using f = 1 / (2\u03c0 * sqrt(L * C)). Returns frequency in hertz given inductance in henries and capacitance in farads.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "inductance": {
+      "type": "number"
+     },
+     "capacitance": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "inductance",
+     "capacitance"
+    ]
+   },
+   "nearest_eval_tool": "bmi",
+   "nearest_cosine": 0.178
+  },
+  {
+   "name": "body_fat_percentage",
+   "description": "Estimates body fat percentage using the U.S. Navy circumference method for men or women.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "gender": {
+      "type": "string",
+      "enum": [
+       "male",
+       "female"
+      ]
+     },
+     "height_cm": {
+      "type": "number"
+     },
+     "neck_cm": {
+      "type": "number"
+     },
+     "waist_cm": {
+      "type": "number"
+     },
+     "hip_cm": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "gender",
+     "height_cm",
+     "neck_cm",
+     "waist_cm",
+     "hip_cm"
+    ]
+   },
+   "nearest_eval_tool": "bmi",
+   "nearest_cosine": 0.324
+  },
+  {
+   "name": "max_heart_rate",
+   "description": "Calculates estimated maximum heart rate (MHR) in beats per minute based on age using the common formula 220 - age.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "age_years": {
+      "type": "integer",
+      "minimum": 0
+     }
+    },
+    "required": [
+     "age_years"
+    ]
+   },
+   "nearest_eval_tool": "age_in_years",
+   "nearest_cosine": 0.313
+  },
+  {
+   "name": "target_heart_rate_zone",
+   "description": "Returns the lower and upper bounds of the target heart rate zone for a given intensity percentage (e.g., 0.5 for 50%) based on age and resting heart rate.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "age_years": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "resting_hr_bpm": {
+      "type": "number"
+     },
+     "intensity": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+     }
+    },
+    "required": [
+     "age_years",
+     "resting_hr_bpm",
+     "intensity"
+    ]
+   },
+   "nearest_eval_tool": "age_in_years",
+   "nearest_cosine": 0.233
+  },
+  {
+   "name": "daily_caloric_needs",
+   "description": "Estimates total daily energy expenditure (TDEE) using the Mifflin\u2011St Jeor equation for basal metabolic rate multiplied by an activity factor.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "gender": {
+      "type": "string",
+      "enum": [
+       "male",
+       "female"
+      ]
+     },
+     "weight_kg": {
+      "type": "number"
+     },
+     "height_cm": {
+      "type": "number"
+     },
+     "age_years": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "activity_level": {
+      "type": "string",
+      "enum": [
+       "sedentary",
+       "light",
+       "moderate",
+       "active",
+       "very_active"
+      ]
+     }
+    },
+    "required": [
+     "gender",
+     "weight_kg",
+     "height_cm",
+     "age_years",
+     "activity_level"
+    ]
+   },
+   "nearest_eval_tool": "bmi",
+   "nearest_cosine": 0.325
+  }
+ ],
+ "dropped": []
+}

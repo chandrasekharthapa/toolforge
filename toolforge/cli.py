@@ -95,6 +95,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("stats", help="library and run statistics")
     p = sub.add_parser("models", help="list the models your provider serves to your key")
     p.add_argument("filter", nargs="?", default="", help="only show models containing this text")
+    p.add_argument("--probe", action="store_true", help="send each listed model a 5-token test request")
     p = sub.add_parser("curate", help="find duplicate / under-performing tools")
     p.add_argument("--apply", action="store_true", help="retire under-performing tools")
     p = sub.add_parser("serve", help="run the REST API")
@@ -132,7 +133,10 @@ def main(argv: list[str] | None = None) -> int:
         try:
             for model_id in [m for m in llm.list_models() if args.filter.lower() in m.lower()]:
                 mark = "  <- configured" if model_id == llm.model else ""
-                print(model_id + mark)
+                if model_id == settings.user_model:
+                    mark += "  <- user model"
+                status = f"  [{llm.probe(model_id)}]" if args.probe else ""
+                print(model_id + status + mark, flush=True)
         except LLMConfigError as e:
             print(c("error   ", "31") + str(e), file=sys.stderr)
             return 2
@@ -145,14 +149,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "run":
         from .agent import Toolforge
         from .llm import LLMConfigError
+        from .sandbox import SandboxUnavailable
 
         try:
             if not args.json:
                 print(c(f"using   {settings.provider}:{settings.model or '(default model)'}", "2")
-                      + c(f"  (provider from {_where('TOOLFORGE_PROVIDER')})", "2"))
+                      + c(f"  (provider from {_where('TOOLFORGE_PROVIDER')})", "2")
+                      + (c(f"  user model: {settings.user_model}", "2") if settings.user_model else "")
+                      + (c(f"  sandbox: docker {settings.sandbox_image}", "2") if settings.sandbox == "docker" else ""))
             forge = Toolforge(settings, registry=registry, rag=not args.no_rag)
             result = forge.run(args.task, on_event=None if args.json else _event)
-        except LLMConfigError as e:
+        except (LLMConfigError, SandboxUnavailable) as e:
             print(c("error   ", "31") + str(e), file=sys.stderr)
             return 2
         if args.json:
@@ -183,14 +190,17 @@ def main(argv: list[str] | None = None) -> int:
         for tc in t.tests:
             print(c("  test ", "2") + json.dumps(tc.model_dump(exclude_defaults=True)))
     elif args.cmd == "call":
-        from .sandbox import Sandbox
+        from .sandbox import SandboxUnavailable, make_sandbox
 
         t = registry.get(args.name)
         if t is None:
             print(f"no active tool named {args.name!r}")
             return 1
-        res = Sandbox(settings.sandbox_timeout, settings.sandbox_memory_mb).call(
-            t.code, t.name, json.loads(args.args))
+        try:
+            res = make_sandbox(settings).call(t.code, t.name, json.loads(args.args))
+        except SandboxUnavailable as e:
+            print(c("error   ", "31") + str(e), file=sys.stderr)
+            return 2
         registry.record_use(t.id, res.ok)
         print(json.dumps(res.result) if res.ok else c(res.error or "failed", "31"))
         return 0 if res.ok else 1

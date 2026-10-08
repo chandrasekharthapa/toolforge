@@ -1,0 +1,254 @@
+{
+ "meta": {
+  "model": "nvidia:nvidia/nemotron-3-super-120b-a12b",
+  "user_model": "nvidia:meta/llama-3.2-11b-vision-instruct",
+  "protocol": 2,
+  "embedder": "hashing",
+  "n": 3,
+  "seeds": [
+   3
+  ],
+  "modes": [
+   "latm"
+  ],
+  "date": "2026-10-08"
+ },
+ "summary": {
+  "cells": {
+   "latm|dyck_languages": {
+    "seeds": [
+     3
+    ],
+    "items_per_seed": [
+     3
+    ],
+    "acc_mean": 0.3333333333333333,
+    "acc_sd": 0.0,
+    "tokens_mean": 4093.0,
+    "user_tokens_mean": 4093.0,
+    "latency_mean": 19.331999999999997,
+    "tool_frac": 1.0,
+    "tool_items": 3,
+    "tool_correct": 1,
+    "built_during_use": 0,
+    "repaired_during_use": 0
+   },
+   "latm|logical_deduction_five_objects": {
+    "seeds": [
+     3
+    ],
+    "items_per_seed": [
+     3
+    ],
+    "acc_mean": 0.6666666666666666,
+    "acc_sd": 0.0,
+    "tokens_mean": 15424.666666666666,
+    "user_tokens_mean": 6558.666666666667,
+    "latency_mean": 78.592,
+    "tool_frac": 1.0,
+    "tool_items": 3,
+    "tool_correct": 2,
+    "built_during_use": 0,
+    "repaired_during_use": 1
+   }
+  },
+  "overall": {
+   "latm": {
+    "acc_mean": 0.5,
+    "acc_sd": 0.0,
+    "complete_seeds": 1,
+    "tokens_mean": 9758.833333333332
+   }
+  },
+  "make": {
+   "dyck_languages": {
+    "seeds": 1,
+    "built": 1,
+    "tokens_mean": 13700.0,
+    "demo_correct": 1
+   },
+   "logical_deduction_five_objects": {
+    "seeds": 1,
+    "built": 1,
+    "tokens_mean": 70044.0,
+    "demo_correct": 1
+   }
+  }
+ },
+ "rows": {
+  "latm__dyck_languages__s3": [
+   {
+    "index": 205,
+    "target": "} } ]",
+    "answer": "(no final answer within the step budget)",
+    "tokens": 6913,
+    "user_tokens": 6913,
+    "llm_calls": 9,
+    "latency_s": 44.031,
+    "tool_calls": 1,
+    "created": [],
+    "reused": [
+     "solve"
+    ],
+    "failed": [],
+    "repaired": [],
+    "calls": [
+     "{\"call\": \"solve\", \"args\": {\"problem\": \"Complete the rest of the sequence, making sure that the parentheses are closed properly. Input: [ < > ] [ { < { } > { [ ( [ ( ) ] ) ]\"}, \"result\": \"} } ]\", \"error\": null}"
+    ],
+    "correct": false
+   },
+   {
+    "index": 82,
+    "target": ">",
+    "answer": "}",
+    "tokens": 2311,
+    "user_tokens": 2311,
+    "llm_calls": 4,
+    "latency_s": 5.502,
+    "tool_calls": 1,
+    "created": [],
+    "reused": [
+     "solve"
+    ],
+    "failed": [],
+    "repaired": [],
+    "calls": [
+     "{\"call\": \"solve\", \"args\": {\"problem\": \"Complete the rest of the sequence, making sure that the parentheses are closed properly. Input: < { ( { } ) < > } Reply with only the closing brackets needed to complete the sequence, separated by spaces.\"}, \"result\": \">\", \"error\": null}"
+    ],
+    "correct": false
+   },
+   {
+    "index": 20,
+    "target": "> ) }",
+    "answer": "> ) }",
+    "tokens": 3055,
+    "user_tokens": 3055,
+    "llm_calls": 5,
+    "latency_s": 8.463,
+    "tool_calls": 1,
+    "created": [],
+    "reused": [
+     "solve"
+    ],
+    "failed": [],
+    "repaired": [],
+    "calls": [
+     "{\"call\": \"solve\", \"args\": {\"problem\": \"Complete the rest of the sequence, making sure that the parentheses are closed properly. Input: { ( < [ < > ] Reply with only the closing brackets needed to complete the sequence, separated by spaces.\"}, \"result\": \"> ) }\", \"error\": null}"
+    ],
+    "correct": true
+   }
+  ],
+  "latm__logical_deduction_five_objects__s3": [
+   {
+    "index": 122,
+    "target": "(E)",
+    "answer": "(E)",
+    "tokens": 32326,
+    "user_tokens": 5728,
+    "llm_calls": 9,
+    "latency_s": 188.897,
+    "tool_calls": 2,
+    "created": [],
+    "reused": [
+     "solve_order_ranking"
+    ],
+    "failed": [],
+    "repaired": [
+     "solve_order_ranking"
+    ],
+    "calls": [
+     "{\"call\": \"solve_order_ranking\", \"args\": {\"problem\": \"The following paragraphs each describe a set of five objects arranged in a fixed order. The statements are logically consistent within each paragraph. A fruit stand sells five fruits: loquats, peaches, pears, plums, and watermelons. The watermelons are the most expensive. The peaches are more expensive than the loquats. The plums are the second-",
+     "{\"call\": \"solve_order_ranking\", \"args\": {\"problem\": \"The following paragraphs each describe a set of five objects arranged in a fixed order. The statements are logically consistent within each paragraph. A fruit stand sells five fruits: loquats, peaches, pears, plums, and watermelons. The watermelons are the most expensive. The peaches are more expensive than the loquats. The plums are the second-"
+    ],
+    "correct": true
+   },
+   {
+    "index": 13,
+    "target": "(D)",
+    "answer": "<<RESULT>>",
+    "tokens": 9480,
+    "user_tokens": 9480,
+    "llm_calls": 9,
+    "latency_s": 28.938,
+    "tool_calls": 1,
+    "created": [],
+    "reused": [
+     "solve_order_ranking"
+    ],
+    "failed": [],
+    "repaired": [],
+    "calls": [
+     "{\"call\": \"solve_order_ranking\", \"args\": {\"problem\": \"The following paragraphs each describe a set of five objects arranged in a fixed order. The statements are logically consistent within each paragraph. In a golf tournament, there were five golfers: Ada, Eli, Amy, Joe, and Mel. Ada finished above Eli. Amy finished below Mel. Ada finished second. Mel finished below Eli. Options: (A) Ada finished f"
+    ],
+    "correct": false
+   },
+   {
+    "index": 133,
+    "target": "(D)",
+    "answer": "(D)",
+    "tokens": 4468,
+    "user_tokens": 4468,
+    "llm_calls": 5,
+    "latency_s": 17.941,
+    "tool_calls": 2,
+    "created": [],
+    "reused": [
+     "solve_order_ranking"
+    ],
+    "failed": [],
+    "repaired": [],
+    "calls": [
+     "{\"call\": \"solve_order_ranking\", \"args\": {\"problem\": \"The following paragraphs each describe a set of five objects arranged in a fixed order. The statements are logically consistent within each paragraph. A fruit stand sells five fruits: loquats, peaches, pears, plums, and watermelons. The watermelons are the most expensive. The peaches are more expensive than the loquats. The plums are the second-",
+     "{\"call\": \"solve_order_ranking\", \"args\": {\"problem\": \"The following paragraphs each describe a set of five objects arranged in a fixed order. The statements are logically consistent within each paragraph. A fruit stand sells five fruits: loquats, peaches, pears, plums, and watermelons. The watermelons are the most expensive. The peaches are more expensive than the loquats. The plums are the second-"
+    ],
+    "correct": true
+   }
+  ]
+ },
+ "make": {
+  "latm-make__dyck_languages__s3": {
+   "demos": [
+    238,
+    191,
+    200
+   ],
+   "created": [
+    "solve"
+   ],
+   "failed": [],
+   "tokens": 13700,
+   "llm_calls": 6,
+   "latency_s": 81.53,
+   "answer": "} >",
+   "protocol": 2,
+   "correct": true,
+   "checked": 10,
+   "demos_before": 10,
+   "demos_after": 10,
+   "repair_tokens": 0,
+   "repair_ok": null
+  },
+  "latm-make__logical_deduction_five_objects__s3": {
+   "demos": [
+    11,
+    107,
+    78
+   ],
+   "created": [
+    "solve_order_ranking"
+   ],
+   "failed": [],
+   "tokens": 70044,
+   "llm_calls": 11,
+   "latency_s": 688.417,
+   "answer": "(B)",
+   "protocol": 2,
+   "correct": true,
+   "checked": 10,
+   "demos_before": 10,
+   "demos_after": 10,
+   "repair_tokens": 0,
+   "repair_ok": null
+  }
+ }
+}

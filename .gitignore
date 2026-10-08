@@ -12,3 +12,8 @@ dist/
 build/
 !evals/results/.gitkeep
 evals/results/.progress/
+evals/results/.bbh_progress/
+toolforge_colab.zip
+toolforge_reranker.zip
+# fine-tuned reranker weights (~90 MB): publish on the Hugging Face Hub, not in git
+evals/distill/reranker/

@@ -237,3 +237,28 @@ def test_parse_json_survives_reasoning_models():
     assert parse_json(prose) == {"needs": [{"name_hint": "x", "description": "y"}]}
     nested = 'ok: {"code": "def f(d):\\n    return {\\"k\\": 1}", "tests": []} done'
     assert parse_json(nested)["tests"] == []
+
+
+def test_probe_and_user_model_errors_name_the_right_setting():
+    import pytest
+
+    from toolforge.config import Settings
+    from toolforge.llm import LLMModelError, make_user_llm
+
+    def handler(req):
+        if req.url.path.endswith("/models"):
+            return httpx.Response(200, json={"data": [{"id": "listed-but-dead"}, {"id": "live"}]})
+        model = __import__("json").loads(req.content)["model"]
+        if model == "live":
+            return httpx.Response(200, json={"choices": [{"message": {"content": "OK"}}]})
+        return httpx.Response(404, json={})
+
+    llm = _llm(handler)
+    assert llm.probe("live") == "ok" and llm.probe("listed-but-dead").startswith("HTTP 404")
+
+    user = make_user_llm(Settings(provider="groq", model="big", user_model="listed-but-dead"))
+    user.http = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(LLMModelError, match="TOOLFORGE_USER_MODEL") as info:
+        user.complete("s", "p")
+    assert "--probe" in str(info.value)
+    assert make_user_llm(Settings(provider="groq", model="big", user_model=None)) is None

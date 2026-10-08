@@ -15,7 +15,7 @@ import re
 import sys
 import threading
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from .config import Settings
@@ -176,6 +176,8 @@ class LLM:
     """Base class: subclasses implement ``_complete``."""
 
     name = "base"
+    #: the setting that chose this model, named in error messages
+    model_env = "TOOLFORGE_MODEL"
 
     def __init__(self) -> None:
         self.usage = Usage()
@@ -280,7 +282,10 @@ class OpenAICompatLLM(LLM):
         else:
             key, self.key_source = "not-needed", "none"
         self._key_hint = _mask(key) if self.key_source != "none" else "(no key)"
-        self.http = httpx.Client(timeout=120, headers={"Authorization": f"Bearer {key}"})
+        # reasoning models can think for minutes on one request; the read timeout must allow it
+        read_s = float(os.getenv("TOOLFORGE_HTTP_TIMEOUT") or 300)
+        self.http = httpx.Client(timeout=httpx.Timeout(read_s, connect=20.0),
+                                 headers={"Authorization": f"Bearer {key}"})
 
     def _post_with_retry(self, url: str, body: dict[str, Any], attempts: int = 6):
         """POST with backoff on rate limits (429) and transient server errors (5xx).
@@ -295,6 +300,12 @@ class OpenAICompatLLM(LLM):
         for attempt in range(attempts):
             try:
                 r = self.http.post(url, json=body)
+            except httpx.ReadTimeout:
+                # the model is too slow on THIS request: one retry, not six (each waits the full timeout)
+                if attempt >= 1:
+                    raise
+                _notice(f"{self.provider} did not answer within the read timeout; retrying once")
+                continue
             except httpx.TransportError:
                 if attempt == attempts - 1:
                     raise
@@ -315,7 +326,7 @@ class OpenAICompatLLM(LLM):
                     raise LLMQuotaError(
                         f"{self.provider} rate limit needs a {mins:.0f}-minute wait for {self.model!r}: {detail}\n"
                         "  This is usually the free tier's daily token quota. Options: wait and re-run "
-                        "(the benchmark resumes where it stopped), or set TOOLFORGE_MODEL to another model "
+                        f"(the benchmark resumes where it stopped), or set {self.model_env} to another model "
                         "(each model has its own quota; run `toolforge models`)."
                     )
                 if attempt == attempts - 1:
@@ -347,7 +358,9 @@ class OpenAICompatLLM(LLM):
                     f"{self.provider} does not serve model {self.model!r}"
                     f"{' any more (retired)' if r.status_code == 410 else ''} (HTTP {r.status_code}): {detail}\n"
                     f"  models available to your key: {available}\n"
-                    "  Set TOOLFORGE_MODEL in .env to one of these (`toolforge models <word>` filters the list)."
+                    "  A model can be listed and still not be served: `toolforge models <word> --probe` "
+                    "tests each one.\n"
+                    f"  Set {self.model_env} in .env to one that works."
                 )
             if r.status_code == 400:
                 try:
@@ -362,6 +375,17 @@ class OpenAICompatLLM(LLM):
             r.raise_for_status()
             return r
         raise RuntimeError("unreachable")  # pragma: no cover
+
+    def probe(self, model: str) -> str:
+        """'ok', or a short reason a model id cannot be used for chat right now."""
+        try:
+            r = self.http.post(f"{self.base_url}/chat/completions", timeout=60, json={
+                "model": model, "max_tokens": 5, "messages": [{"role": "user", "content": "Say OK."}]})
+        except Exception as e:  # noqa: BLE001
+            return f"unreachable ({type(e).__name__})"
+        if r.status_code == 200:
+            return "ok"
+        return f"HTTP {r.status_code}: {_error_detail(r)[:80]}"
 
     def list_models(self) -> list[str]:
         """Model ids the endpoint serves to this key (GET /models)."""
@@ -449,6 +473,18 @@ def make_llm(settings: Settings) -> LLM:
         return OpenAICompatLLM(settings.model, settings.base_url or defaults.get(provider),
                                key_env=PROVIDER_KEY_ENV.get(provider, "OPENAI_API_KEY"), provider=provider)
     raise ValueError(f"Unknown TOOLFORGE_PROVIDER: {settings.provider!r}")
+
+
+def make_user_llm(settings: Settings) -> LLM | None:
+    """The tool-USER model (planning + execution) when ``TOOLFORGE_USER_MODEL`` is set, else None."""
+    if not settings.user_model:
+        return None
+    provider = settings.user_provider or settings.provider
+    same = provider.lower() == settings.provider.lower()
+    llm = make_llm(replace(settings, provider=provider, model=settings.user_model,
+                           base_url=settings.base_url if same else None))
+    llm.model_env = "TOOLFORGE_USER_MODEL"
+    return llm
 
 
 # --------------------------------------------------------------------------- JSON parsing

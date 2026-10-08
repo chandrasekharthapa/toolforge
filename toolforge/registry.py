@@ -75,6 +75,9 @@ class Registry:
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA)
+        cols = {r[1] for r in self.conn.execute("PRAGMA table_info(tools)")}
+        if "example" not in cols:  # libraries created before usage examples existed
+            self.conn.execute("ALTER TABLE tools ADD COLUMN example TEXT")
         self.conn.commit()
 
     # ------------------------------------------------------------------ tools
@@ -106,6 +109,7 @@ class Registry:
             verification=Verification.model_validate_json(row["verification"] or "{}"),
             status=row["status"], uses=row["uses"], successes=row["successes"],
             failures=row["failures"], origin_task=row["origin_task"], created_at=row["created_at"],
+            example=json.loads(row["example"]) if row["example"] else None,
         )
 
     def get_by_id(self, tool_id: int) -> Tool:
@@ -156,6 +160,13 @@ class Registry:
     def set_lesson_embedding(self, lesson_id: int, embedding: np.ndarray) -> None:
         with self._lock:
             self.conn.execute("UPDATE lessons SET embedding=? WHERE id=?", (json.dumps(embedding.tolist()), lesson_id))
+            self.conn.commit()
+
+    def set_example(self, tool_id: int, example: dict) -> None:
+        """Keep the first worked call as the tool's usage example (never overwritten)."""
+        with self._lock:
+            self.conn.execute("UPDATE tools SET example=? WHERE id=? AND example IS NULL",
+                              (json.dumps(example, default=str), tool_id))
             self.conn.commit()
 
     def record_use(self, tool_id: int, success: bool) -> None:

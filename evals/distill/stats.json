@@ -1,0 +1,32 @@
+{
+ "splits": {
+  "train": {
+   "needs": 330,
+   "pairs": 1320,
+   "positives": 232
+  },
+  "val": {
+   "needs": 90,
+   "pairs": 360,
+   "positives": 69
+  }
+ },
+ "val_tools": [
+  "area_of_circle",
+  "debt_to_income_ratio",
+  "extract_hashtags",
+  "hex_to_rgb",
+  "is_leap_year",
+  "kinetic_energy",
+  "loan_to_value_ratio",
+  "mobius_function",
+  "modular_inverse",
+  "net_worth_calculator"
+ ],
+ "test_needs": 65,
+ "teacher_mean_latency_s": 2.495,
+ "teacher_mean_tokens": 872.7,
+ "teacher_calls": 485,
+ "teacher_test_accuracy": 0.985,
+ "test_gold_in_candidates": 1.0
+}

@@ -15,6 +15,9 @@
                 disagreements into new regression tests
 * register    – versioned insert into the library; lessons from repairs are committed
 * execute     – JSON tool-calling loop that runs every call in the sandbox
+* field_repair– a verified tool that raised on every real call this run is sent back to the
+                maker with those inputs; the fix must pass the old tests plus new ones for the
+                failing inputs, becomes the next version, and the task is executed again (once)
 """
 
 from __future__ import annotations
@@ -39,6 +42,7 @@ from .sandbox import Sandbox
 class ForgeState(TypedDict, total=False):
     task: str
     needs: list[dict[str, Any]]
+    offered: list[str]
     idx: int
     decision: str
     chosen: str | None
@@ -55,13 +59,36 @@ class ForgeState(TypedDict, total=False):
     reused: list[str]
     failed_needs: list[str]
     tool_calls: list[dict[str, Any]]
+    field_failures: list[dict[str, Any]]
+    known_tests: list[dict[str, Any]]
+    field_repair: str | None
+    repaired: list[str]
     answer: str
     trace: list[dict[str, Any]]
 
 
+TASK_REF = "<<TASK>>"
+RESULT_REF = "<<RESULT>>"
+
 _PER_NEED_RESET = {"draft": None, "reference": None, "attempts": 0, "feedback": "",
                    "verified": False, "verification": {}, "pending_lessons": [], "adjudicated": [],
                    "chosen": None}
+
+
+def _is_task_copy(value: Any, task: str) -> bool:
+    """True if ``value`` is the task text, retyped: most of it, in order, with small differences."""
+    if not isinstance(value, str) or len(value) < 40:
+        return False
+    a, b = " ".join(value.split()), " ".join(task.split())
+    if not a or not b or len(a) > 1.2 * len(b):
+        return False
+    if a in b and len(a) >= 0.4 * len(b) and b.startswith(a[:30]):  # the task's opening, a line or two cut
+        return True
+    if len(a) < 0.6 * len(b):
+        return False
+    from difflib import SequenceMatcher
+
+    return SequenceMatcher(None, a, b, autojunk=False).ratio() >= 0.9
 
 
 def _clip(value: Any, limit: int = 1500) -> Any:
@@ -70,8 +97,10 @@ def _clip(value: Any, limit: int = 1500) -> Any:
 
 
 class Forge:
-    def __init__(self, llm: LLM, knowledge: Knowledge, sandbox: Sandbox, settings: Settings) -> None:
-        self.llm = llm
+    def __init__(self, llm: LLM, knowledge: Knowledge, sandbox: Sandbox, settings: Settings,
+                 user_llm: LLM | None = None) -> None:
+        self.llm = llm  # tool MAKER: writes, verifies, judges and repairs tools
+        self.user_llm = user_llm or llm  # tool USER: plans each query and executes it
         self.knowledge = knowledge
         self.registry = knowledge.registry
         self.sandbox = sandbox
@@ -80,6 +109,11 @@ class Forge:
         self.reuse_t = settings.reuse_threshold if settings.reuse_threshold is not None else emb.reuse_threshold
         self.consider_t = (settings.consider_threshold if settings.consider_threshold is not None
                            else emb.consider_threshold)
+        self.reranker = None
+        if (settings.judge or "llm").lower() == "reranker":
+            from .reranker import RerankerJudge
+
+            self.reranker = RerankerJudge(settings.reranker_path)
 
     # ---------------------------------------------------------------- helpers
     @staticmethod
@@ -94,16 +128,29 @@ class Forge:
         system = P.PLANNER % {"max_needs": self.s.max_needs}
         needs: list[dict[str, Any]] = []
         error = None
+        offered: list[str] = []
+        prompt = f"Task: {state['task']}"
+        if self.s.plan_with_library:
+            hits = self.knowledge.find_tools(state["task"], 3)
+            offered = [h.key for h in hits]
+            if hits:
+                prompt += P.library_for_planner([h.payload for h in hits])
         try:
-            data = self.llm.complete_json(system, f"Task: {state['task']}")
-            for raw in (data.get("needs") or [])[: self.s.max_needs]:
-                try:
-                    needs.append(Need(**raw).model_dump())
-                except (ValidationError, TypeError):
-                    continue
+            for attempt in range(2):
+                data = self.user_llm.complete_json(system, prompt)
+                for raw in (data.get("needs") or [])[: self.s.max_needs]:
+                    try:
+                        needs.append(Need(**raw).model_dump())
+                    except (ValidationError, TypeError):
+                        continue
+                if len(needs) >= self.s.min_needs or attempt:
+                    break
+                prompt += (f"\n\nThis task explicitly requires building a reusable tool: return at least "
+                           f"{self.s.min_needs} need(s).")
         except ValueError as e:
             error = str(e)
-        return {"needs": needs, "idx": 0, "bound": [], "created": [], "reused": [],
+        return {"needs": needs, "offered": offered, "idx": 0, "bound": [], "created": [], "reused": [],
+                "repaired": [], "field_failures": [], "field_repair": None,
                 "failed_needs": [], "tool_calls": [], **_PER_NEED_RESET,
                 "trace": self._log(state, "analyze", needs=[n["name_hint"] for n in needs], error=error)}
 
@@ -115,10 +162,17 @@ class Forge:
         candidates = [h for h in hits if h.cosine >= self.consider_t or h.key == need.name_hint]
         decision, chosen, reason = "create", None, "no sufficiently similar tool"
 
-        if candidates:
+        if need.name_hint in state.get("offered", []) and self.registry.get(need.name_hint):
+            # the planner was shown this verified tool's card and asked for it by name
+            decision, chosen, reason = "reuse", need.name_hint, "planner chose this library tool by name"
+        elif candidates:
             top = max(candidates, key=lambda h: h.cosine)
             if top.cosine >= self.reuse_t:
                 decision, chosen, reason = "reuse", top.key, f"cosine {top.cosine:.2f} ≥ {self.reuse_t}"
+            elif self.reranker is not None:
+                pick, reason = self.reranker.choose(need.query(), [h.payload for h in candidates])
+                if pick:
+                    decision, chosen = "reuse", pick
             else:
                 prompt = (f"Task: {state['task']}\n"
                           f"Need: {need.name_hint} — {need.description}\n\n"
@@ -202,9 +256,12 @@ class Forge:
         except (ValidationError, TypeError) as e:
             return fail("schema", f"The JSON did not match the required shape: {e}")
 
-        # arbiter-decided tests are sticky: a repair cannot silently drop them
+        # arbiter-decided tests are sticky: a repair cannot silently drop them. Known-answer cases the
+        # caller supplied (solved examples) are added the same way, copied exactly by code, not by a model
         known = {json.dumps(t.model_dump(), sort_keys=True, default=str) for t in draft.tests}
-        for raw_test in state.get("adjudicated", []):
+        params = set(draft.parameters.get("properties", {}))
+        supplied = [t for t in state.get("known_tests", []) if set(t.get("kwargs", {})) and set(t["kwargs"]) <= params]
+        for raw_test in [*state.get("adjudicated", []), *supplied]:
             if json.dumps(raw_test, sort_keys=True, default=str) not in known:
                 draft.tests.append(TestCase(**raw_test))
 
@@ -306,6 +363,11 @@ class Forge:
         for lesson in state.get("pending_lessons", []):
             self.knowledge.add_lesson(need.description, lesson["mistake"], lesson["fix"])
         bound = state["bound"] + ([tool.name] if tool.name not in state["bound"] else [])
+        if state.get("field_repair"):
+            return {"bound": bound, "repaired": [*state.get("repaired", []), tool.name], "idx": state["idx"] + 1,
+                    **_PER_NEED_RESET,
+                    "trace": self._log(state, "register", tool=tool.name, version=tool.version, how=how,
+                                       field_repair=True, lessons=len(state.get("pending_lessons", [])))}
         return {"bound": bound, "created": state["created"] + [tool.name], "idx": state["idx"] + 1,
                 **_PER_NEED_RESET,
                 "trace": self._log(state, "register", tool=tool.name, version=tool.version, how=how,
@@ -324,15 +386,22 @@ class Forge:
         calls: list[dict[str, Any]] = []
         answer = "(no final answer within the step budget)"
         nudged = False
-        for _ in range(self.s.max_exec_steps):
+        failed: dict[str, str] = {}
+        succeeded: dict[str, Any] = {}
+        task_answer: str | None = None  # what a tool given the WHOLE task returned
+        for step_no in range(self.s.max_exec_steps):
+            last = step_no == self.s.max_exec_steps - 1
+            if last and step_no:
+                scratch.append({"note": "This is your last step: reply with the final answer now "
+                                        "(\"<<RESULT>>\" copies the last tool result)."})
             try:
-                step = self.llm.complete_json(P.EXECUTOR, P.executor_prompt(state["task"], tools, scratch))
+                step = self.user_llm.complete_json(P.EXECUTOR, P.executor_prompt(state["task"], tools, scratch))
             except ValueError:
                 scratch.append({"error": "reply was not valid JSON; respond with one JSON object"})
                 continue
             action = step.get("action")
             if action == "final":
-                if tools and not calls and not nudged:
+                if tools and not calls and not nudged and not last:
                     # A verified tool was forged or reused for this task; an answer computed "in
                     # the model's head" bypasses it and would make the run's accuracy meaningless.
                     nudged = True
@@ -340,6 +409,14 @@ class Forge:
                                              "tool(s) to compute the result, then give the final answer."})
                     continue
                 answer = str(step.get("answer", "")).strip()
+                if self.s.answer_from_task_tool and task_answer is not None:
+                    answer = task_answer  # the tool solved the whole task; do not let the model retype it
+                elif RESULT_REF in answer:  # the final answer IS a tool result: copy it exactly
+                    last = next((c for c in reversed(calls) if "error" not in c), None)
+                    if last is not None:
+                        value = last["result"]
+                        answer = answer.replace(RESULT_REF, value if isinstance(value, str)
+                                                else json.dumps(value, default=str))
                 break
             if action != "call":
                 scratch.append({"error": f"unknown action {action!r}"})
@@ -352,14 +429,106 @@ class Forge:
             if not isinstance(args, dict):
                 scratch.append({"call": name, "error": "args must be a JSON object"})
                 continue
-            res = self.sandbox.call(tool.code, tool.name, args)
+            signature = name + json.dumps(args, sort_keys=True, default=str)
+            if signature in failed:  # small models retry the same broken call until the budget runs out
+                scratch.append({"call": name, "args": args, "error": f"this exact call already failed "
+                                f"({failed[signature][:200]}). Change the arguments to match the parameters "
+                                "and example_call, or give your final answer."})
+                continue
+            if signature in succeeded:  # same call, same answer: the model is stuck, not computing
+                scratch.append({"call": name, "args": args, "result": succeeded[signature],
+                                "note": "You already have this result. Give your final answer now."})
+                continue
+            # "<<TASK>>" passes the task text verbatim: a long problem statement copied through a
+            # small model's JSON gets mangled, a reference does not
+            real_args = {k: (state["task"] if v == TASK_REF else v) for k, v in args.items()}
+            whole_task = TASK_REF in args.values()
+            if self.s.answer_from_task_tool and not whole_task:
+                # a long argument that is clearly the task retyped (a line dropped, spacing changed) is
+                # snapped back to the exact task text the tool was verified on
+                for k, v in real_args.items():
+                    if _is_task_copy(v, state["task"]):
+                        real_args[k], whole_task = state["task"], True
+            res = self.sandbox.call(tool.code, tool.name, real_args)
             self.registry.record_use(tool.id, res.ok)
+            if not res.ok:
+                failed[signature] = res.error or "failed"
+            else:
+                succeeded[signature] = _clip(res.result)
+                if (whole_task and task_answer is None
+                        and isinstance(res.result, (str, int, float)) and not isinstance(res.result, bool)):
+                    task_answer = str(res.result)
+            if res.ok and tool.example is None and name in [*state.get("created", []), *state.get("repaired", [])]:
+                # the run that built a tool leaves a worked call behind for later callers (LATM's
+                # "wrapping": a usage demonstration travels with the tool)
+                shown = {k: TASK_REF if v == state["task"] else _clip(v, 300) for k, v in args.items()}
+                tool.example = {"args": shown, "result": _clip(res.result, 300)}
+                self.registry.set_example(tool.id, tool.example)
             entry = ({"call": name, "args": args, "result": _clip(res.result)} if res.ok
                      else {"call": name, "args": args, "error": res.error})
             scratch.append(entry)
             calls.append({**entry, "version": tool.version, "ms": round(res.duration_s * 1000)})
-        return {"answer": answer, "tool_calls": calls,
-                "trace": self._log(state, "execute", calls=len(calls), answer=answer[:300])}
+        if self.s.answer_from_task_tool and task_answer is not None and answer.startswith("(no final answer"):
+            answer = task_answer
+        worked = {c["call"] for c in calls if "error" not in c}
+        field = [{"tool": c["call"], "args": c["args"], "error": c["error"]} for c in calls
+                 if "error" in c and c["call"] not in worked and "[sandbox]" not in str(c["error"])
+                 and not str(c["error"]).startswith(("timed out", "process killed"))]
+        previous = state.get("tool_calls", []) if state.get("field_repair") else []
+        return {"answer": answer, "tool_calls": previous + calls,
+                "field_failures": [] if state.get("field_repair") else field,
+                "trace": self._log(state, "execute", calls=len(calls), answer=answer[:300],
+                                   field_failures=len(field))}
+
+    def field_repair(self, state: ForgeState) -> dict[str, Any]:
+        failures = [f for f in state["field_failures"] if self._repairs_left(f["tool"])] or state["field_failures"]
+        name = failures[0]["tool"]
+        key = f"field_repairs:{name}"
+        self.registry.set_meta(key, str(int(self.registry.get_meta(key) or 0) + 1))
+        tool = self.registry.get(name)
+        shown = [f for f in failures if f["tool"] == name][:3]
+        feedback = ("This tool passed verification, but it failed in real use. Solving the task below, the "
+                    "caller passed the inputs exactly as the task writes them, and every call raised:\n"
+                    + "\n".join(f"- args={json.dumps(f['args'], default=str)[:400]} -> {f['error'][:200]}"
+                                 for f in shown)
+                    + f"\n\nThe task: {state['task'][:1500]!r}\n\nMake the function accept inputs written "
+                      "this way (keep the same name and parameters), keep every existing test passing, and "
+                      "add test cases for these inputs with their correct expected outputs.")
+        need = {"name_hint": name, "description": tool.description}
+        return {"needs": [*state["needs"], need], "idx": len(state["needs"]), **_PER_NEED_RESET,
+                "draft": {k: v for k, v in tool.model_dump().items() if k in ToolDraft.model_fields},
+                "feedback": feedback, "field_repair": name, "field_failures": [],
+                "trace": self._log(state, "field_repair", tool=name, failed_calls=len(shown))}
+
+    # ---------------------------------------------------------------- known-answer repair
+    def repair_with_tests(self, name: str, tests: list[TestCase], reason: str, task: str = "") -> dict[str, Any]:
+        """Repair a registered tool against cases whose answers are KNOWN (e.g. solved examples).
+
+        The cases become sticky tests: the repair loop may not drop them, the full verification
+        pipeline runs again, and the version gate still demands the old tests pass. Returns
+        ``{"ok": bool, "tool": name, "version": int, "trace": [...]}``.
+        """
+        tool = self.registry.get(name)
+        if tool is None:
+            return {"ok": False, "tool": name, "trace": [{"node": "repair", "error": "no such tool"}]}
+        draft = {k: v for k, v in tool.model_dump().items() if k in ToolDraft.model_fields}
+        sticky = [t.model_dump() for t in tests]
+        state: ForgeState = {
+            "task": task or f"repair {name}", "needs": [{"name_hint": name, "description": tool.description}],
+            "idx": 0, "bound": [], "created": [], "reused": [], "repaired": [], "failed_needs": [],
+            "tool_calls": [], "trace": [], **_PER_NEED_RESET,
+            "draft": draft, "feedback": reason, "adjudicated": sticky, "field_repair": name,
+        }
+        while True:
+            state.update(self.synthesize(state))
+            state.update(self.verify(state))
+            if state.get("verified"):
+                state.update(self.register(state))
+                fixed = self.registry.get(state["repaired"][-1]) if state.get("repaired") else None
+                return {"ok": True, "tool": fixed.name if fixed else name,
+                        "version": fixed.version if fixed else tool.version, "trace": state["trace"]}
+            if state.get("attempts", 0) > self.s.max_repairs:
+                return {"ok": False, "tool": name, "version": tool.version, "trace": state["trace"]}
 
     # ---------------------------------------------------------------- routing
     def _after_verify(self, state: ForgeState) -> str:
@@ -371,9 +540,22 @@ class Forge:
     def _next_need(state: ForgeState) -> str:
         return "match" if state["idx"] < len(state["needs"]) else "execute"
 
+    def _after_execute(self, state: ForgeState) -> str:
+        failures = [f for f in state.get("field_failures", []) if self._repairs_left(f["tool"])]
+        return "field_repair" if self.s.field_repair and failures else END
+
+    def _repairs_left(self, name: str) -> bool:
+        """A tool may be sent back for field repair at most ``max_field_repairs`` times per library:
+        a tool that keeps breaking needs a different design, not another round of big-model tokens."""
+        return int(self.registry.get_meta(f"field_repairs:{name}") or 0) < self.s.max_field_repairs
+
+    def _after_give_up(self, state: ForgeState) -> str:
+        return END if state.get("field_repair") else self._next_need(state)  # keep the first answer
+
     def build(self):
         g = StateGraph(ForgeState)
-        for name in ("analyze", "match", "reuse", "synthesize", "verify", "register", "give_up", "execute"):
+        for name in ("analyze", "match", "reuse", "synthesize", "verify", "register", "give_up", "execute",
+                     "field_repair"):
             g.add_node(name, getattr(self, name))
         g.set_entry_point("analyze")
         g.add_conditional_edges("analyze", self._next_need, {"match": "match", "execute": "execute"})
@@ -381,7 +563,9 @@ class Forge:
         g.add_edge("synthesize", "verify")
         g.add_conditional_edges("verify", self._after_verify,
                                 {"register": "register", "synthesize": "synthesize", "give_up": "give_up"})
-        for node in ("reuse", "register", "give_up"):
+        for node in ("reuse", "register"):
             g.add_conditional_edges(node, self._next_need, {"match": "match", "execute": "execute"})
-        g.add_edge("execute", END)
+        g.add_conditional_edges("give_up", self._after_give_up, {"match": "match", "execute": "execute", END: END})
+        g.add_conditional_edges("execute", self._after_execute, {"field_repair": "field_repair", END: END})
+        g.add_edge("field_repair", "synthesize")
         return g.compile()

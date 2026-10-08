@@ -83,3 +83,32 @@ def test_sandbox_allows_stdlib_that_reads_its_own_data():
 def test_batch_reports_per_input_errors():
     result = sandbox.batch("def f(n):\n    return 10 // n", "f", [{"n": 2}, {"n": 0}])
     assert result.outputs == [{"ok": True, "value": 5}, {"ok": False, "error": "ZeroDivisionError"}]
+
+
+def test_windows_path_assigns_the_job_before_sending_code_and_always_closes_it(monkeypatch):
+    """Runs the Windows code path on any OS with a fake kernel32, to pin the ordering."""
+    import toolforge.sandbox as S
+
+    calls = []
+
+    class K32:
+        def AssignProcessToJobObject(self, job, handle):  # noqa: N802 - Win32 name
+            calls.append(("assign", job))
+            return True
+
+        def CloseHandle(self, job):  # noqa: N802
+            calls.append(("close", job))
+            return True
+
+    monkeypatch.setattr(S, "_windows_job", lambda mb, cpu: (calls.append(("create", mb, cpu)) or (K32(), 7)))
+    monkeypatch.setattr(S.subprocess.Popen, "_handle", 1, raising=False)
+    sb = S.Sandbox(timeout=2, memory_mb=64)
+    proc = sb._run_windows({"mode": "call", "code": "def f():\n    return 5\n", "func": "f", "kwargs": {}},
+                           {"PATH": "/usr/bin:/bin"}, ".", 2)
+    assert S._parse(proc, "call", 0.0, killed=False).result == 5
+    assert calls == [("create", 64, 3), ("assign", 7), ("close", 7)]
+
+    calls.clear()
+    assert sb._run_windows({"mode": "call", "code": "def f():\n    while True:\n        pass\n", "func": "f",
+                            "kwargs": {}}, {"PATH": "/usr/bin:/bin"}, ".", 1) is None  # timeout
+    assert calls[-1] == ("close", 7)

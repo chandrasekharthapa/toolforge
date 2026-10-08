@@ -44,6 +44,8 @@ Rules:
 - Type hints and a docstring are required. Validate inputs and raise ValueError on bad input.
 - Return JSON-serialisable values (numbers, strings, booleans, lists, dicts).
 - Make the function GENERAL (parameters, not hard-coded task values).
+- Accept argument values in the form they appear in the task text (tolerate spaces between
+  tokens, surrounding whitespace and letter case), so callers do not have to reformat them.
 - Write at least %(min_tests)d test cases with exact expected values that you have
   checked by careful reasoning; cover edge cases. Floats are compared with tolerance.
 
@@ -73,8 +75,14 @@ for each input. Reason carefully. Return JSON:
 
 EXECUTOR = """You are Toolforge's executor. Solve the task using the provided tools.
 Call tools for every computation they can perform; do not compute by hand what a tool
-can compute. You have no native function-calling ability here: to use a tool, write the
-JSON object below as your reply text. Respond with JSON only, one of:
+can compute. Pass the task's values exactly as the task gives them. Once a tool's result
+answers the task, give the final answer straight away, based on that result: do not call
+the tool again with altered inputs to "check" it. If a tool takes the whole problem text,
+pass the exact string "<<TASK>>" as that argument and the task text is substituted verbatim.
+If the last tool result already is the final answer, reply {"action": "final", "answer": "<<RESULT>>"}
+and it is copied exactly.
+You have no native function-calling ability here: to use a tool, write the JSON object below
+as your reply text. Respond with JSON only, one of:
   {"action": "call", "tool": "<tool name>", "args": {...}}
   {"action": "final", "answer": "<concise final answer>"}"""
 
@@ -124,6 +132,12 @@ def arbiter_prompt(name: str, description: str, parameters: dict[str, Any],
     shown = [{"input": c["input"], "output_A": c["candidate"], "output_B": c["reference"]} for c in cases]
     return (f"Function: {name}\nSpecification: {description}\n"
             f"Parameters: {json.dumps(parameters)}\nDisagreements: {json.dumps(shown)}")
+
+
+def library_for_planner(tools: list[Tool]) -> str:
+    return ("\n\nVerified tools already in the library:\n" + tool_cards(tools)
+            + "\nIf one of them computes what this task needs, plan that need with the tool's exact name "
+              "as name_hint, so it is reused instead of rebuilt.")
 
 
 def executor_prompt(task: str, tools: list[Tool], scratchpad: list[dict[str, Any]]) -> str:

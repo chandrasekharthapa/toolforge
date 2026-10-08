@@ -1,0 +1,81 @@
+{
+ "threshold": 0.1231,
+ "base_model": "cross-encoder/ms-marco-MiniLM-L6-v2",
+ "parameters": 22713601,
+ "train_seconds": 15.9,
+ "hyperparameters": {
+  "epochs": 4,
+  "lr": 3e-05,
+  "batch": 32,
+  "max_len": 192,
+  "seed": 0
+ },
+ "teacher": {
+  "test_accuracy_vs_gold": 0.985,
+  "mean_latency_s": 2.495,
+  "mean_tokens": 872.7
+ },
+ "zero_shot": {
+  "tau": 0.0034,
+  "val_agreement_with_teacher": 0.644,
+  "test_accuracy_vs_gold": 0.785,
+  "test_agreement_with_teacher": 0.8,
+  "test_positives_correct": 44,
+  "test_positives": 50,
+  "test_negatives_correct": 7,
+  "test_negatives": 15
+ },
+ "student": {
+  "tau": 0.1231,
+  "val_agreement_with_teacher": 0.667,
+  "test_accuracy_vs_gold": 0.8,
+  "test_agreement_with_teacher": 0.815,
+  "test_positives_correct": 44,
+  "test_positives": 50,
+  "test_negatives_correct": 8,
+  "test_negatives": 15
+ },
+ "latency": {
+  "device": "cuda",
+  "ms_per_decision": 6.76,
+  "cpu_ms_per_decision": 63.67
+ },
+ "training": {
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.8298,
+    "val_agreement": 0.6666666666666666
+   },
+   {
+    "epoch": 2,
+    "train_loss": 0.4111,
+    "val_agreement": 0.6666666666666666
+   },
+   {
+    "epoch": 3,
+    "train_loss": 0.3111,
+    "val_agreement": 0.6666666666666666
+   },
+   {
+    "epoch": 4,
+    "train_loss": 0.2302,
+    "val_agreement": 0.6666666666666666
+   }
+  ],
+  "best_epoch": 1,
+  "pos_weight": 4.69
+ },
+ "data": {
+  "train": {
+   "needs": 330,
+   "pairs": 1320,
+   "positives": 232
+  },
+  "val": {
+   "needs": 90,
+   "pairs": 360,
+   "positives": 69
+  }
+ }
+}

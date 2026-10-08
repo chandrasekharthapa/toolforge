@@ -58,6 +58,11 @@ class Settings:
     base_url: str | None = field(default_factory=lambda: _env("TOOLFORGE_BASE_URL"))
     embedder: str = field(default_factory=lambda: _env("TOOLFORGE_EMBEDDER", "hashing"))
     embed_model: str | None = field(default_factory=lambda: _env("TOOLFORGE_EMBED_MODEL"))
+    # Tool MAKER / tool USER split (LATM): when TOOLFORGE_USER_MODEL is set, planning and execution
+    # (the per-query work) use this cheaper model, while writing, verifying and judging tools stays on
+    # TOOLFORGE_MODEL. The provider defaults to TOOLFORGE_PROVIDER.
+    user_provider: str | None = field(default_factory=lambda: _env("TOOLFORGE_USER_PROVIDER"))
+    user_model: str | None = field(default_factory=lambda: _env("TOOLFORGE_USER_MODEL"))
 
     # --- storage ------------------------------------------------------------
     db_path: str = field(default_factory=lambda: _env("TOOLFORGE_DB", "toolforge.db"))
@@ -70,12 +75,19 @@ class Settings:
         default_factory=lambda: float(v) if (v := _env("TOOLFORGE_CONSIDER_THRESHOLD")) else None
     )
     top_k: int = field(default_factory=lambda: _int("TOOLFORGE_TOP_K", 4))
+    #: who decides reuse vs. build among retrieved candidates: "llm" (default) or "reranker"
+    judge: str = field(default_factory=lambda: _env("TOOLFORGE_JUDGE", "llm"))
+    reranker_path: str = field(default_factory=lambda: _env("TOOLFORGE_RERANKER_PATH", "evals/distill/reranker"))
     lexical_weight: float | None = field(
         default_factory=lambda: float(v) if (v := _env("TOOLFORGE_LEXICAL_WEIGHT")) else None
     )
 
     # --- forging ------------------------------------------------------------
     max_needs: int = field(default_factory=lambda: _int("TOOLFORGE_MAX_NEEDS", 3))
+    #: re-ask the planner once if it plans fewer needs (1 = "this task must produce a tool")
+    min_needs: int = field(default_factory=lambda: _int("TOOLFORGE_MIN_NEEDS", 0))
+    # show the planner the library's closest verified tools, so it can plan to reuse one by name
+    plan_with_library: bool = field(default_factory=lambda: _bool("TOOLFORGE_PLAN_WITH_LIBRARY", False))
     max_repairs: int = field(default_factory=lambda: _int("TOOLFORGE_MAX_REPAIRS", 3))
     min_tests: int = field(default_factory=lambda: _int("TOOLFORGE_MIN_TESTS", 3))
 
@@ -87,7 +99,16 @@ class Settings:
 
     # --- execution ----------------------------------------------------------
     max_exec_steps: int = field(default_factory=lambda: _int("TOOLFORGE_MAX_EXEC_STEPS", 8))
+    #: send a tool that raised on every real call back to the maker for one repair, then retry the task
+    field_repair: bool = field(default_factory=lambda: _bool("TOOLFORGE_FIELD_REPAIR", True))
+    max_field_repairs: int = field(default_factory=lambda: _int("TOOLFORGE_MAX_FIELD_REPAIRS", 1))
+    #: when a tool was handed the whole task ("<<TASK>>") and returned a string, that string is the
+    #: answer; the model is not asked to retype it (small models garble even correct results)
+    answer_from_task_tool: bool = field(default_factory=lambda: _bool("TOOLFORGE_ANSWER_FROM_TASK_TOOL", False))
 
     # --- sandbox ------------------------------------------------------------
     sandbox_timeout: float = field(default_factory=lambda: _float("TOOLFORGE_SANDBOX_TIMEOUT", 5.0))
     sandbox_memory_mb: int = field(default_factory=lambda: _int("TOOLFORGE_SANDBOX_MEMORY_MB", 256))
+    # "process" (python -I subprocess + audit hook) or "docker" (same harness in a locked-down container)
+    sandbox: str = field(default_factory=lambda: _env("TOOLFORGE_SANDBOX", "process"))
+    sandbox_image: str = field(default_factory=lambda: _env("TOOLFORGE_SANDBOX_IMAGE", "python:3.12-slim"))
