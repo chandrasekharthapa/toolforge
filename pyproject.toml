@@ -37,6 +37,7 @@ packages = ["toolforge"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]  # evals/ is not an installed package; plain `pytest` (as CI runs it) must find it
 
 [tool.ruff]
 line-length = 120
