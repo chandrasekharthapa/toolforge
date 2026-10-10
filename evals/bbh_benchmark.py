@@ -234,6 +234,10 @@ def _unreachable(e: BaseException | None) -> bool:
     return False
 
 
+class SkipForNow(RuntimeError):
+    """The server is up but too slow for this step; leave it for the next run."""
+
+
 class NetworkDown(RuntimeError):
     """Several network failures in a row: stop instead of skipping every remaining item."""
 
@@ -303,11 +307,16 @@ def _make_tools(make_agent: Callable[[str, str], Any], task: str, seed: int, ite
             held = validation_items(task, seed, {i for i, _ in items} | {i for i, _ in demos})
             check = _check_and_repair(agent, task, r.created[0], demos, held, make_prompt(task, demos, protocol))
     except Exception as e:
-        if _transient(e):
-            raise NetworkDown(f"{type(e).__name__} while building the {task} tool") from e
-        raise
-    finally:
         agent.close()
+        if _transient(e):
+            # a half-built library would be "reused" by the rebuild and its record would say nothing
+            # was built, so the interrupted attempt is wiped and the next run starts clean
+            for suffix in ("", "-wal", "-shm", "-journal"):
+                Path(str(folder / f"latm__{task}__s{seed}.db") + suffix).unlink(missing_ok=True)
+            cls = NetworkDown if _unreachable(e) else SkipForNow
+            raise cls(f"{type(e).__name__} while building the {task} tool") from e
+        raise
+    agent.close()
     first = demos[0][1]
     record = {"demos": [i for i, _ in demos], "created": r.created, "failed": r.failed_needs,
               "tokens": r.total_tokens + check.get("repair_tokens", 0), "llm_calls": r.llm_calls,
@@ -389,7 +398,11 @@ def run_all(tasks: list[str], seeds: list[int], n: int, modes: list[str], checkp
                     # one library per (task, seed); kept in the checkpoint folder so a resume keeps its tools
                     agent = make_agent(str(folder / f"{key}.db"), "maker")
                 elif todo and mode == "latm":
-                    _make_tools(make_agent, task, seed, items, folder, log, protocol)
+                    try:
+                        _make_tools(make_agent, task, seed, items, folder, log, protocol)
+                    except SkipForNow as e:
+                        log(f"[latm-make__{task}__s{seed}] {e}; not saved, the next run builds it again")
+                        continue
                     agent = make_agent(str(folder / f"latm__{task}__s{seed}.db"), "latm-use")
                 for i, ex in todo:
                     try:

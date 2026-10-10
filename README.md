@@ -19,7 +19,7 @@ Toolforge is built around closing that gap:
 | 🛡️ **Two-layer sandbox, red-teamed** | A static AST policy plus a runtime sandbox (PEP 578 audit hook, rlimits, isolated interpreter, scrubbed env). A 35-payload escape corpus runs in CI: **0 escapes**, and the runtime layer alone contains **35/35**. |
 | 🔎 **Hybrid retrieval + LLM judge** | BM25 + embeddings fused with Reciprocal Rank Fusion find candidate tools; an LLM judge decides reuse vs. build. **97% correct reuse decisions** on a labelled 65-need set, with fusion weights measured per embedder. |
 | 📈 **Measured, not claimed** | On a 20-task benchmark, reusing verified tools cut tokens by **75%** and latency by **83%** on repeat tasks, with **100% verified accuracy** (every answer computed by a verified tool). |
-| 🧠 **Big model makes, small model uses** | On four public BIG-Bench Hard tasks (3 seeds), a 120B model's verified tools lift an 11B model from **36% to 54%** (word sorting **38% → 87%**). Where it does not help, and what it costs, is reported too. |
+| 🧠 **Big model makes, small model uses** | On four public BIG-Bench Hard tasks (3 held-out seeds), a 120B model's verified tools lift an 11B model from **40% to 74%**. On Dyck it goes **0% → 95%**, beating the 120B model's own 76%. One task got worse; the README shows why and what it costs. |
 | 🔌 **MCP server** | The forged library is served over the Model Context Protocol, so Claude Desktop, Claude Code or Cursor can call tools your agent wrote, still sandboxed. |
 
 ---
@@ -284,7 +284,7 @@ The benchmark above uses tasks written for this project. To check against someth
 tasks that [LATM](https://arxiv.org/abs/2305.17126) used for tool making: word sorting, Dyck languages,
 logical deduction (5 objects) and tracking shuffled objects (5). Each seed draws a different random 15
 items per task, every answer is graded exactly against the official target, and the whole run is
-repeated with 3 seeds (720 graded answers in total).
+repeated with 3 seeds.
 
 #### 1. A strong model gains nothing: these tasks are saturated for it
 
@@ -298,71 +298,100 @@ that often failed these tasks when answering directly. So the second experiment 
 
 `TOOLFORGE_USER_MODEL` splits the agent in two. The **maker** (`nemotron-3-super-120b-a12b`) writes,
 verifies and repairs tools. The **user** (`llama-3.2-11b-vision-instruct`) plans and answers every
-question, and is shown the library's verified tools. In `latm` mode the maker first builds a tool from 3
-demonstration items that are never test items. After that it is only called if the user needs a new
-tool or a tool breaks.
+question, and is shown the library's verified tools. In `latm` mode, once per task and seed:
 
-| task | big, direct | small, direct | **small + big's tools** | correct when a tool was used |
+1. The maker gets 3 solved demonstration items (never test items) and builds **one** tool,
+   `solve(problem)`, that takes the whole problem text. The demonstrations' answers are copied in as
+   tests by code, not retyped by a model, so a tool cannot pass by "fixing" a known answer.
+2. The tool is then checked on 7 more held-out solved items, and repaired if any fail.
+3. The small model answers all 15 test items with that library. It passes the problem by reference
+   (`"<<TASK>>"`) instead of retyping it. The maker is called again only if a tool breaks in use.
+
+Retrieval and the reuse judge play almost no part in this experiment. Each (task, seed) starts from an
+empty library and gets one tool, so there is nothing to choose between. They are measured on their own
+in the [retrieval benchmark](#retrieval-benchmark) and the [distillation study](#distilling-the-reuse-judge-into-a-small-reranker-a-negative-result).
+
+**Final result, on seeds 4–6.** No code was changed after these seeds were first run. Seed 3 was the
+development seed (see [below](#how-this-was-measured)).
+
+| task | big, direct | small, direct | **small + big's tools** | built a verified tool |
 |---|---|---|---|---|
-| word sorting | 98% ± 4% | 38% ± 20% | **87% ± 7%** | 39/44 |
-| tracking shuffled objects (5) | 100% ± 0% | 53% ± 18% | **64% ± 8%** | 29/44 |
-| logical deduction (5) | 100% ± 0% | 53% ± 18% | 56% ± 21% | 24/44 |
-| Dyck languages | 84% ± 4% | 0% ± 0% | 11% ± 4% | 5/45 |
-| **macro average** | **96% ± 1%** | **36% ± 11%** | **54% ± 4%** | |
+| word sorting | 98% ± 4% | 51% ± 20% | **98% ± 4%** | 3 / 3 seeds |
+| Dyck languages | 76% ± 4% | 0% ± 0% | **95% ± 4%** | 3 / 3 |
+| tracking shuffled objects (5) | 100% ± 0% | 56% ± 4% | **76% ± 27%** | 3 / 3 |
+| logical deduction (5) | 100% ± 0% | 53% ± 18% | 29% ± 4% | 0 / 3 |
+| **macro average** | **93% ± 2%** | **40% ± 10%** | **74% ± 6%** | |
 
-Mean ± sample SD across 3 seeds, 15 items per task per seed. Full tables, tokens and tool-building
-costs: [`bbh_latm.md`](evals/results/bbh_latm.md).
+Mean ± sample SD across 3 seeds, 15 items per task per seed (537 graded answers). Full tables:
+[`bbh_latm_v2.md`](evals/results/bbh_latm_v2.md).
 
-![BIG-Bench Hard accuracy per task: small model alone, small model with the big model's tools, and big model alone](evals/results/bbh_latm.png)
+![BIG-Bench Hard accuracy per task: small model alone, small model with the big model's tools, and big model alone](evals/results/bbh_latm_v2.png)
 
-**The big model's verified tools lift the small model from 36% to 54% and make it far more consistent**
-(seed-to-seed spread ±4 instead of ±11). The gain is concentrated where a task has an obvious tool shape:
-**+49 points on word sorting**, +11 on tracking. Logical deduction is flat, and Dyck is a small gain from
-zero. The tools close part of the gap to the big model's 96%, not all of it.
+**The big model's verified tools lift the small model from 40% to 74%.** On the three tasks where a
+tool got built, it goes from **36% to 90%**. On Dyck the small model with the tool beats the big model
+answering on its own (**95% vs 76%**): the big model's reasoning slips on long bracket strings, and its
+verified code does not.
 
-**Cost: the split pays off only when the first tool is right.** On word sorting, each answer costs about
-1,600 small-model tokens and 63 big-model tokens, the one-off build spread over 15 questions. That is
-LATM's economics. On logical deduction and tracking, the small model kept hitting inputs the tools did not
-handle; the maker repaired tools 12 and 6 times and built 5 more mid-run. That pushed logical deduction to
-about 10,500 big-model tokens per question, more than the big model answering on its own (about 900).
-Over the whole run, the split used **more** big-model tokens than direct answering (≈0.9M including
-tool building, against 0.28M). It is cheaper only per question that reuses a tool which works first time.
+**Tracking is uneven: 15/15, 7/15 and 12/15 on the three seeds.** All three tools passed their
+demonstrations but only 7–8 of the 10 checked solved items, and the repair round did not fix them.
+The tool was still handed to the small model, which on seed 5 then built four helper tools of its own
+mid-run. A tool that fails held-out solved items should not be shipped. That is the next change to
+make, and it was not made here because these are the test seeds.
 
-**Where the small model fails with a correct tool.** On Dyck, the bracket tools work on the question's own
-format; 40 of 45 answers still went wrong, because the 11B model mangles the bracket
-string it passes in, or calls the tool, gets the right closing sequence and then "corrects" it. Tool
-making moves the bottleneck from computing the answer to extracting arguments and trusting the result,
-and small models are weak at both.
+**Logical deduction got worse, and this is the result's main limitation.** The maker never built a
+verified tool (0 of 3 seeds, about 91k tokens each). The hard part of this task is not an algorithm but
+reading free-form English constraints ("the tractor is newer than the motorcyle", typo included). The
+maker's parsers broke on entity names they did not expect (`KeyError: 'kiwis'`, `'hawk'`), and several
+repair rounds resubmitted code that failed in exactly the same way. With no tool, the small model built
+narrow ones (`find_position`, `rank_vehicles`, `compare_fruit_prices`) and scored **29%, below its own
+53%** answering directly. The obvious fix is to fall back to direct answering when the make step
+fails. It is untested, for the same reason. Tool making helps where a task has a regular input format
+and an algorithmic core (sorting, bracket matching, swap tracking), not where the difficulty is the
+language itself.
 
-#### What the first attempt exposed, and what changed
+**Cost.** With tools, the small model spends 13–16× more tokens per question than answering directly
+(word sorting: 1,682 against 132), because it plans, calls and reads results. For the big model, the
+split pays off when the first tool is right. On word sorting and Dyck, building the tools took **66k
+big-model tokens** for all 6 (task, seed) pairs, against **292k** for the big model answering the same 90
+questions itself, and the split was more accurate. On the two logic tasks, expensive builds (about 91k
+tokens each for logical deduction, all of which failed, and 116k for tracking) and repairs during use
+reversed that. Over the whole run, the split used about **990k**
+big-model tokens against **373k** for direct answering.
 
-The first full run of this experiment failed: with tools, the small model got **1 of 90** items right on
-the three hard tasks (word sorting worked). The tools were correct, but the small model almost never
-managed to call them: `complete_bracket_sequence` succeeded on 2 of 120 calls. Reading the saved calls
-traced it to four agent weaknesses, each fixed generally rather than per task:
+#### How this was measured
 
-- **Tools rejected the task's own input format.** The bracket tool raised on `( [ {` because the maker's
-  tests only used `"([{"`. Tools are now told to accept values as the task writes them. And if a
-  verified tool raises on **every** real call in a run, it goes back to the maker with those inputs
-  (**field repair**). The fix must pass all the old tests plus new ones for the failing inputs, and it
-  becomes the next version. The task is then retried once.
-- **No usage example travelled with a tool.** The run that builds a tool now stores one worked call
-  (`example_call`), shown to every later caller. This is LATM's "wrapping" step.
-- **The small model looped.** It repeated identical failing calls, or a successful call, until the step
-  budget ran out. Repeats are now answered from memory or refused, and the last step asks for an answer.
-- **The make step sometimes built nothing.** It now requires at least one planned tool. It can still
-  fail verification, as it did on 4 of 12 (task, seed) pairs; then the user's run builds one as needed.
+The protocol above is the second one. The first ([`bbh_latm.md`](evals/results/bbh_latm.md), seeds 0–2)
+let the maker write its own tests and the small model retype the problem into tool calls. It reached
+**36% → 54%** (word sorting 38% → 87%, Dyck 0% → 11%). Reading its saved calls showed the tools were
+mostly right and the small model was calling them badly: it rejected the task's own input format, looped
+on repeated calls, and mangled bracket strings it retyped. Those fixes are field repair, usage examples
+and repeat refusal (see [design decisions](#design-decisions)).
 
-These were found by reading seed 0's failures, so seed 0 is not a clean held-out set. All three seeds
-were re-run with the same code. The first attempt's raw runs are kept locally under
-`evals/results/.bbh_progress/` (not in git). The big-model columns come from the earlier run of the same items and were not re-run.
-Five items that never got a reply within the time limit after 3 attempts (an overloaded free tier) are
-graded wrong. One is the big model's (Dyck); the other four are the small model's, on Dyck, where it
-scored 0% anyway.
+Protocol 2 was then developed on **seed 3 only** (dev result: 88% macro, not reported as a result). Every
+change made on that seed is general and has a test:
+
+- **Known answers outrank the model's own tests.** If every failing test is one the maker wrote itself
+  and every solved example passes, the maker's tests are dropped instead of "fixing" correct code.
+- **Double-escaped code is unescaped,** but only when it does not compile as sent and does once unescaped.
+- **A retyped task is snapped back to the exact text.** The snap applies when the argument is mostly the task, copied in
+  order, even inside `<<< >>>` or with a sentence dropped. It only happens for a parameter the tool was
+  verified on whole problems for, so a tool that takes a word list is never handed the whole task.
+- **No cut-off usage examples.** A truncated demonstration taught the small model to wrap and truncate
+  its own calls (tracking went 47% → 100% on seed 3 once this and the snap were fixed).
+- **Demo code is stripped before the safety check.** An `if __name__ == "__main__":` block or a bare
+  `print(solve(...))` is removed. Anything else at the top level is still rejected.
+- **A slow build step is skipped and retried later,** not treated as the network being down.
+
+Seeds 4–6 were then run once with that code. Items that got no reply after 3 attempts (a free tier
+under load) are graded wrong: about 3 of the tool-using small model's, 6 of the small model's alone and 4
+of the big model's. Three more are still missing (178 of 180 graded in the tools column, 179 in the small-alone
+column).
+Raw runs are kept locally under `evals/results/.bbh_progress/` (not in git).
 
 ```bash
 python -m evals.bbh_benchmark                                            # big model: direct vs Toolforge
-TOOLFORGE_USER_MODEL=meta/llama-3.2-11b-vision-instruct python -m evals.bbh_benchmark   # + the LATM split
+TOOLFORGE_USER_MODEL=meta/llama-3.2-11b-vision-instruct \
+  python -m evals.bbh_benchmark --seeds 4 5 6 --modes direct direct-user latm   # the LATM split (protocol 2)
 python -m evals.bbh_benchmark --report                                   # rebuild tables from saved runs
 ```
 
@@ -386,6 +415,9 @@ about 873 tokens and 2.5 s per decision. [`evals/distill_data.py`](evals/distill
 | LLM judge (teacher, `nemotron-3-super-120b-a12b`) | **98%** | — | 873 tokens | 2,495 ms |
 | cross-encoder, zero-shot | 78% | 80% | 0 tokens | 6.8 ms (T4) |
 | cross-encoder, fine-tuned | 80% | 82% | 0 tokens | 6.8 ms (T4) · 64 ms (CPU) |
+
+The teacher's 98% is its own run on these 65 needs (64 of 65). The retrieval benchmark above is a
+separate run of the same judge and got 97% (63 of 65); LLM judges are not perfectly repeatable.
 
 **Fine-tuning bought 1.5 points, one decision out of 65, and the student stays 18 points behind the teacher.**
 It is 370× faster and free, but not good enough to replace the judge, so the LLM judge remains the
@@ -463,7 +495,7 @@ toolforge/
   mcp_server.py    MCP server over the library
   api.py, cli.py   FastAPI service and CLI
 evals/             task benchmark (reuse + ablations), retrieval benchmark, red-team corpus
-tests/             128 offline tests driven by a scripted LLM (no API key needed; Docker tests skip without an image)
+tests/             148 offline tests driven by a scripted LLM (no API key needed; Docker tests skip without an image)
 ```
 
 ## Design decisions
@@ -487,6 +519,8 @@ tests/             128 offline tests driven by a scripted LLM (no API key needed
 ## Roadmap
 
 - [x] Container backend for the sandbox (same harness, `--network none`, read-only, cgroup limits)
+- [ ] LATM split: ship a tool only if it passes its held-out solved items; fall back to direct answering when the make step fails (both found on the BBH test seeds, so not applied to those numbers)
+- [ ] Stop a repair loop that resubmits code failing the same way, instead of spending the budget
 - [ ] gVisor / Firecracker runtime for multi-tenant use
 - [ ] Generalization pass in the curator: merge near-duplicate tools into one parameterized tool
 - [ ] Tool composition: let forged tools call other verified tools

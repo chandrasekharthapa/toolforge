@@ -97,6 +97,40 @@ class _Checker(ast.NodeVisitor):
             self._flag(node, "dunder", "string literal references a dunder escape path")
 
 
+def _is_main_guard(node: ast.stmt) -> bool:
+    if not isinstance(node, ast.If) or not isinstance(node.test, ast.Compare) or len(node.test.comparators) != 1:
+        return False
+    sides = [node.test.left, node.test.comparators[0]]
+    return (isinstance(node.test.ops[0], ast.Eq)
+            and any(isinstance(x, ast.Name) and x.id == "__name__" for x in sides)
+            and any(isinstance(x, ast.Constant) and x.value == "__main__" for x in sides))
+
+
+def strip_demo_code(code: str) -> tuple[str, int]:
+    """Remove demo code a model appends after the tool: an ``if __name__ == "__main__":`` block and
+    bare top-level expressions such as ``print(solve(...))``. Neither is part of a tool, and neither
+    would run as one; removing code can only shrink what runs. Returns (code, lines removed). Any
+    other top-level statement is left for ``check_code`` to reject."""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return code, 0
+    drop: set[int] = set()
+    for node in tree.body:
+        is_docstring = isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant)
+        if _is_main_guard(node) or (isinstance(node, ast.Expr) and not is_docstring):
+            drop.update(range(node.lineno, (node.end_lineno or node.lineno) + 1))
+    if not drop:
+        return code, 0
+    lines = code.splitlines(keepends=True)
+    kept = "".join(line for i, line in enumerate(lines, start=1) if i not in drop)
+    try:
+        ast.parse(kept)
+    except SyntaxError:  # e.g. two statements shared a line; leave it to the policy check
+        return code, 0
+    return kept, len(drop)
+
+
 def check_code(code: str, func_name: str) -> list[Violation]:
     """Return every policy violation; an empty list means the code may run."""
     try:

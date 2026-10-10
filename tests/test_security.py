@@ -112,3 +112,17 @@ def test_windows_path_assigns_the_job_before_sending_code_and_always_closes_it(m
     assert sb._run_windows({"mode": "call", "code": "def f():\n    while True:\n        pass\n", "func": "f",
                             "kwargs": {}}, {"PATH": "/usr/bin:/bin"}, ".", 1) is None  # timeout
     assert calls[-1] == ("close", 7)
+
+
+def test_demo_code_after_the_tool_is_stripped_and_anything_else_still_rejected():
+    from toolforge.safety import check_code, strip_demo_code
+
+    tool = 'def solve(problem: str) -> str:\n    """Doc."""\n    return problem.upper()\n'
+    demo = tool + '\nprint(solve("a"))\n\nif __name__ == "__main__":\n    import sys\n    print(solve(sys.argv[1]))\n'
+    code, removed = strip_demo_code(demo)
+    assert removed == 4 and check_code(code, "solve") == [] and "sys" not in code
+    assert strip_demo_code('"""Module doc."""\n' + tool) == ('"""Module doc."""\n' + tool, 0)  # docstring kept
+    loop = tool + "for i in range(3):\n    solve(str(i))\n"
+    assert strip_demo_code(loop) == (loop, 0) and check_code(loop, "solve")  # not demo code: still rejected
+    other_if = tool + "if True:\n    X = 1\n"
+    assert strip_demo_code(other_if)[1] == 0 and check_code(other_if, "solve")

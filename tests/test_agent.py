@@ -494,6 +494,20 @@ def test_double_escaped_code_is_unescaped_once():
     assert ns["f"]("a") == "a\n!" and code.count("\n") == 3
 
 
+def test_partly_flattened_code_is_unescaped_and_valid_code_is_left_alone():
+    from toolforge.models import ToolDraft
+
+    partly = 'def f(x: str) -> str:\\n    """Doc."""\\n    y = x.strip()\n    return y + "!"\n'
+    code = ToolDraft(name="f", description="d", code=partly).code
+    ns: dict = {}
+    exec(code, ns)
+    assert ns["f"](" a ") == "a!"
+    fine = 'def f(x: str) -> str:\n    return x.replace("\\\\n", "\\n")\n'  # a literal "\\n" the code needs
+    assert ToolDraft(name="f", description="d", code=fine).code == fine
+    broken = 'def f(x):\\n    return (x\n'  # does not compile either way: left as sent, for the static check
+    assert ToolDraft(name="f", description="d", code=broken).code == broken
+
+
 def test_answer_from_task_tool_ignores_a_garbled_retyping(make_forge):
     brain = _bracket_brain(draft(TOLERANT, name="count_open", parameters=COUNT_SCHEMA, tests=COUNT_TESTS,
                                  description="Count opening brackets in a string."))
@@ -523,3 +537,107 @@ def test_a_retyped_task_is_snapped_back_to_the_exact_text():
     assert _is_task_copy(task.replace("\n\n", " ").replace("properly.", "properly"), task)
     assert not _is_task_copy("[ < > ] [ {", task)  # just the extracted brackets: a real argument
     assert not _is_task_copy("Complete the rest of the sequence. " * 6, task)
+    opening_dropped = "<<<" + task.split(", ", 1)[1] + ">>>"  # wrapped, the first clause left out
+    assert _is_task_copy(opening_dropped, task)
+    assert not _is_task_copy("Reply with only the closing brackets needed, separated by spaces. " * 2, task)
+
+
+PROBLEM_SCHEMA = {"type": "object", "required": ["problem"], "properties": {"problem": {"type": "string"}}}
+SOLVE_OPEN = ('def count_open(problem: str) -> int:\n    """Count opening brackets after Input:."""\n'
+              '    return sum(c in "([{<" for c in problem.split("Input:", 1)[-1])\n')
+
+
+def bracket_task(seq: str) -> str:
+    return ("You are given a sequence of brackets and have to count some of them. "
+            f"Count the opening brackets in the sequence. Input: {seq}\nReply with a number only.")
+
+
+def _solve_brain(tests, executor):
+    b = Brain().plan("Count the opening brackets", ("count_open", "Count opening brackets in a problem."))
+    b.will_write("count_open", draft(SOLVE_OPEN, name="count_open", parameters=PROBLEM_SCHEMA, tests=tests,
+                                     description="Count opening brackets in a problem."))
+    b.judge_choice = "count_open"
+    b._executor = executor
+    return b
+
+
+def _retyping_executor(prompt):
+    """A small model that wraps the problem in <<< >>>, drops its opening sentence, then misreports."""
+    task = prompt.split("Task:", 1)[1].split("Tools:", 1)[0].strip()
+    if "result" in prompt.split("Previous steps:", 1)[1]:
+        return {"action": "final", "answer": "There are 9."}
+    return {"action": "call", "tool": "count_open", "args": {"problem": "<<<" + task.split(". ", 1)[1] + ">>>"}}
+
+
+def test_a_retyped_whole_problem_is_snapped_and_teaches_the_task_reference(make_forge):
+    whole = [{"kwargs": {"problem": bracket_task(q)}, "expected": n} for q, n in [("( (", 2), ("[ < >", 2), ("", 0)]]
+    forge = make_forge(_solve_brain(whole, _retyping_executor), differential=False, answer_from_task_tool=True)
+    result = forge.run(bracket_task("( ( [ ] <"))
+    assert result.answer == "4"  # the tool got the exact task, and its answer was not retyped
+    assert forge.registry.get("count_open").example == {"args": {"problem": "<<TASK>>"}, "result": 4}
+
+
+def test_a_tool_verified_on_short_inputs_is_never_handed_the_whole_task(make_forge):
+    short = [{"kwargs": {"problem": f"Input: {q}"}, "expected": n} for q, n in [("( (", 2), ("[ < >", 2), ("", 0)]]
+    forge = make_forge(_solve_brain(short, _retyping_executor), differential=False, answer_from_task_tool=True)
+    assert forge.run(bracket_task("( ( [ ] <")).answer == "There are 9."  # no snapping: the model's answer stands
+
+
+def test_a_cut_off_argument_is_never_kept_as_the_usage_example(make_forge):
+    whole = [{"kwargs": {"problem": bracket_task(q)}, "expected": n} for q, n in [("( (", 2), ("[ < >", 2), ("", 0)]]
+    runs = {"n": 0}
+
+    def executor(prompt):
+        if "result" in prompt.split("Previous steps:", 1)[1]:
+            return {"action": "final", "answer": "<<RESULT>>"}
+        runs["n"] += 1
+        problem = "<<<Input: " + "( " * 200 + ">>>" if runs["n"] == 1 else "<<TASK>>"  # a long demo, then the task
+        return {"action": "call", "tool": "count_open", "args": {"problem": problem}}
+
+    forge = make_forge(_solve_brain(whole, executor), differential=False)
+    first = forge.run(bracket_task("( ( [ ] <"))
+    assert first.created == ["count_open"] and forge.registry.get("count_open").example is None
+    second = forge.run(bracket_task("< < ("))
+    assert second.reused == ["count_open"] and second.answer == "3"
+    assert forge.registry.get("count_open").example == {"args": {"problem": "<<TASK>>"}, "result": 3}
+
+
+def test_known_answers_outrank_a_wrong_self_written_test(make_forge):
+    from toolforge.models import TestCase
+
+    wrong_own = {"kwargs": {"s": "(\\n("}, "expected": 5}  # the model's own guess, mis-escaped and wrong
+    brain = _bracket_brain(draft(TOLERANT, name="count_open", parameters=COUNT_SCHEMA,
+                                 tests=[*COUNT_TESTS, wrong_own], description="Count opening brackets in a string."))
+    forge = make_forge(brain, differential=False, field_repair=False)
+    result = forge.run("Count the opening brackets in: ( ( [",
+                       known_tests=[TestCase(kwargs={"s": "( ( ["}, expected=3),
+                                    {"kwargs": {"s": "{ <"}, "expected": 2}])
+
+    assert result.created == ["count_open"] and "repair" not in brain.roles  # good code was not "fixed"
+    tool = forge.registry.get("count_open")
+    kept = [t.kwargs for t in tool.tests]
+    assert wrong_own["kwargs"] not in kept and {"s": "( ( ["} in kept and {"s": "{ <"} in kept
+    verify = [e for e in result.trace if e["node"] == "verify" and e.get("ok")][0]
+    assert verify["dropped_own_tests"] == 1
+
+
+def test_a_failing_known_answer_is_never_dropped(make_forge):
+    from toolforge.models import TestCase
+
+    wrong_own = {"kwargs": {"s": "(\\n("}, "expected": 5}
+    brain = _bracket_brain(draft(STRICT, name="count_open", parameters=COUNT_SCHEMA,
+                                 tests=[*COUNT_TESTS, wrong_own], description="Count opening brackets in a string."))
+    forge = make_forge(brain, differential=False, field_repair=False, max_repairs=1)
+    result = forge.run("Count the opening brackets in: ( ( [",
+                       known_tests=[TestCase(kwargs={"s": "( ( ["}, expected=3)])
+    assert result.created == [] and forge.registry.get("count_open") is None  # the strict tool fails a known answer
+
+
+def test_a_tool_with_a_demo_main_block_is_registered_without_it(make_forge):
+    demo = TOLERANT + '\nif __name__ == "__main__":\n    print(count_open("(("))\n'
+    brain = _bracket_brain(draft(demo, name="count_open", parameters=COUNT_SCHEMA, tests=COUNT_TESTS,
+                                 description="Count opening brackets in a string."))
+    forge = make_forge(brain, differential=False)
+    result = forge.run("Count the opening brackets in: ( ( [")
+    assert result.created == ["count_open"] and "repair" not in brain.roles
+    assert "__main__" not in forge.registry.get("count_open").code

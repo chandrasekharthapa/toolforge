@@ -10,6 +10,14 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
+def _compiles(src: str) -> bool:
+    try:
+        compile(src, "<tool>", "exec")
+    except (SyntaxError, ValueError):
+        return False
+    return True
+
+
 class TestCase(BaseModel):
     __test__ = False  # stop pytest from collecting this class
 
@@ -66,14 +74,18 @@ class ToolDraft(BaseModel):
     @field_validator("code")
     @classmethod
     def _unescape_flattened_code(cls, v: str) -> str:
-        """Some models JSON-escape the source twice, so it arrives as ONE line full of literal ``\\n``.
-        A real function spans several lines, so a newline-free body with ``\\n`` in it is unescaped."""
-        if "\n" not in v.strip() and "\\n" in v:
-            try:  # undo exactly one level of JSON string escaping
-                return json.loads('"' + v.replace('"', '\\"').replace('\\\\"', '\\"') + '"')
-            except ValueError:
-                return v.replace("\\n", "\n").replace("\\t", "\t")
-        return v
+        """Some models JSON-escape the source twice, so it arrives full of literal ``\\n`` - all of it on
+        one line, or only part of it. Code that does not compile but contains ``\\n`` gets one level of
+        escaping undone; the result is kept only if it compiles. Code that compiles is never touched."""
+        if "\\n" not in v or _compiles(v):
+            return v
+        candidates = []
+        try:  # undo exactly one level of JSON string escaping (real newlines allowed: strict=False)
+            candidates.append(json.loads('"' + v.replace('"', '\\"').replace('\\\\"', '\\"') + '"', strict=False))
+        except ValueError:
+            pass
+        candidates.append(v.replace("\\n", "\n").replace("\\t", "\t"))
+        return next((c for c in candidates if _compiles(c)), v)
 
     @model_validator(mode="after")
     def _unwrap_dict_args(self) -> ToolDraft:

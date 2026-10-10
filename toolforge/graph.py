@@ -35,7 +35,7 @@ from .differential import adjudicated_tests, compare, generate_inputs
 from .knowledge import Knowledge
 from .llm import LLM
 from .models import Need, TestCase, ToolDraft, Verification
-from .safety import check_code
+from .safety import check_code, strip_demo_code
 from .sandbox import Sandbox
 
 
@@ -75,20 +75,33 @@ _PER_NEED_RESET = {"draft": None, "reference": None, "attempts": 0, "feedback": 
                    "chosen": None}
 
 
+_WRAPPING = " \t\r\n\"'`<>"  # delimiters a model adds around copied text (<<< ... >>>, quotes)
+
+
 def _is_task_copy(value: Any, task: str) -> bool:
-    """True if ``value`` is the task text, retyped: most of it, in order, with small differences."""
+    """True if ``value`` is the task text, retyped: most of the task, almost all of it copied in order.
+    Small models drop an opening sentence or the options, wrap the text in ``<<< >>>`` or quotes, or
+    change spacing; none of that makes it a different input."""
     if not isinstance(value, str) or len(value) < 40:
         return False
-    a, b = " ".join(value.split()), " ".join(task.split())
-    if not a or not b or len(a) > 1.2 * len(b):
+    a, b = " ".join(value.strip(_WRAPPING).split()), " ".join(task.split())
+    if not a or not b or len(a) > 1.2 * len(b) or len(a) < 0.4 * len(b):
         return False
-    if a in b and len(a) >= 0.4 * len(b) and b.startswith(a[:30]):  # the task's opening, a line or two cut
+    if a in b:
         return True
-    if len(a) < 0.6 * len(b):
-        return False
     from difflib import SequenceMatcher
 
-    return SequenceMatcher(None, a, b, autojunk=False).ratio() >= 0.9
+    m = SequenceMatcher(None, a, b, autojunk=False)
+    copied = sum(block.size for block in m.get_matching_blocks())
+    return copied >= 0.95 * len(a) or (len(a) >= 0.6 * len(b) and m.ratio() >= 0.9)
+
+
+def _whole_task_params(tool: Any, task: str) -> set[str]:
+    """Parameters this tool was verified on whole problem statements for (a test value at least half
+    as long as the task). Only these may be snapped to the task: a tool that takes a word list or a
+    bracket string must never be handed the whole problem."""
+    return {k for t in tool.tests for k, v in t.kwargs.items()
+            if isinstance(v, str) and len(v) >= 0.5 * len(task)}
 
 
 def _clip(value: Any, limit: int = 1500) -> Any:
@@ -234,7 +247,7 @@ class Forge:
                 P.reference_prompt(draft.name, draft.description, draft.parameters),
                 temperature=0.7,
             )
-            code = str(data.get("code", ""))
+            code = strip_demo_code(str(data.get("code", "")))[0]
         except ValueError:
             return {"ok": False, "why": "unparseable reply"}
         violations = check_code(code, draft.name)
@@ -258,13 +271,18 @@ class Forge:
 
         # arbiter-decided tests are sticky: a repair cannot silently drop them. Known-answer cases the
         # caller supplied (solved examples) are added the same way, copied exactly by code, not by a model
-        known = {json.dumps(t.model_dump(), sort_keys=True, default=str) for t in draft.tests}
+        def key(t: Any) -> str:  # one spelling for a test case, whether it came as a dict or a TestCase
+            return json.dumps((t if isinstance(t, TestCase) else TestCase(**t)).model_dump(),
+                              sort_keys=True, default=str)
+
+        known = {key(t) for t in draft.tests}
         params = set(draft.parameters.get("properties", {}))
         supplied = [t for t in state.get("known_tests", []) if set(t.get("kwargs", {})) and set(t["kwargs"]) <= params]
         for raw_test in [*state.get("adjudicated", []), *supplied]:
-            if json.dumps(raw_test, sort_keys=True, default=str) not in known:
+            if key(raw_test) not in known:
                 draft.tests.append(TestCase(**raw_test))
 
+        draft.code, stripped = strip_demo_code(draft.code)
         violations = check_code(draft.code, draft.name)
         if violations:
             return fail("static", "The static safety policy rejected the code:\n"
@@ -273,6 +291,19 @@ class Forge:
             return fail("tests", f"Provide at least {self.s.min_tests} test cases (got {len(draft.tests)}).")
 
         result = self.sandbox.run_tests(draft.code, draft.name, draft.tests)
+        dropped = 0
+        if not result.ok and supplied:
+            # Known answers outrank the model's own guesses: if every failing test is one the model wrote
+            # itself while every supplied known-answer case passes, the self-written tests are the ones
+            # that are wrong (a typo, a mis-escaped "\\n") and are dropped instead of "fixing" good code.
+            pinned = {key(t) for t in [*supplied, *state.get("adjudicated", [])]}
+            failing = {r["i"] for r in result.results if not r.get("passed")}
+            own = {i for i, t in enumerate(draft.tests) if key(t) not in pinned}
+            if failing and failing <= own:
+                kept = [t for i, t in enumerate(draft.tests) if i not in failing]
+                if len(kept) >= self.s.min_tests:
+                    dropped, draft.tests = len(failing), kept
+                    result = self.sandbox.run_tests(draft.code, draft.name, draft.tests)
         if not result.ok:
             return fail("tests", "Sandboxed tests failed:\n" + result.failure_report())
 
@@ -323,7 +354,8 @@ class Forge:
                 verification.differential = "skipped"
 
         return {"verified": True, "draft": draft.model_dump(), "verification": verification.model_dump(),
-                **updates, "trace": self._log(state, "verify", ok=True, **verification.model_dump())}
+                **updates, "trace": self._log(state, "verify", ok=True, dropped_own_tests=dropped,
+                                              stripped_demo_lines=stripped, **verification.model_dump())}
 
     def _resolve_name(self, draft: ToolDraft) -> tuple[ToolDraft, str]:
         """Decide whether a draft may become the next version of a same-named tool.
@@ -446,8 +478,9 @@ class Forge:
             if self.s.answer_from_task_tool and not whole_task:
                 # a long argument that is clearly the task retyped (a line dropped, spacing changed) is
                 # snapped back to the exact task text the tool was verified on
+                whole_params = _whole_task_params(tool, state["task"])
                 for k, v in real_args.items():
-                    if _is_task_copy(v, state["task"]):
+                    if k in whole_params and _is_task_copy(v, state["task"]):
                         real_args[k], whole_task = state["task"], True
             res = self.sandbox.call(tool.code, tool.name, real_args)
             self.registry.record_use(tool.id, res.ok)
@@ -458,12 +491,17 @@ class Forge:
                 if (whole_task and task_answer is None
                         and isinstance(res.result, (str, int, float)) and not isinstance(res.result, bool)):
                     task_answer = str(res.result)
-            if res.ok and tool.example is None and name in [*state.get("created", []), *state.get("repaired", [])]:
+            if res.ok and tool.example is None and (
+                    whole_task or name in [*state.get("created", []), *state.get("repaired", [])]):
                 # the run that built a tool leaves a worked call behind for later callers (LATM's
-                # "wrapping": a usage demonstration travels with the tool)
-                shown = {k: TASK_REF if v == state["task"] else _clip(v, 300) for k, v in args.items()}
-                tool.example = {"args": shown, "result": _clip(res.result, 300)}
-                self.registry.set_example(tool.id, tool.example)
+                # "wrapping": a usage demonstration travels with the tool). The task itself is shown as
+                # "<<TASK>>". An example with a cut-off argument is not a call anyone can copy (small
+                # models imitate its truncation and wrapping), so none is kept; the first call that hands
+                # the tool the whole task records one later.
+                shown = {k: TASK_REF if real_args.get(k) == state["task"] else v for k, v in args.items()}
+                if all(len(json.dumps(v, default=str)) <= 300 for v in shown.values()):
+                    tool.example = {"args": shown, "result": _clip(res.result, 300)}
+                    self.registry.set_example(tool.id, tool.example)
             entry = ({"call": name, "args": args, "result": _clip(res.result)} if res.ok
                      else {"call": name, "args": args, "error": res.error})
             scratch.append(entry)

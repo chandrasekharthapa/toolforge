@@ -289,3 +289,32 @@ def test_protocols_keep_separate_latm_results_but_share_direct_user(tmp_path):
     assert "direct-user__word_sorting__s0" in rows
     rows1, _ = load_saved(big, user)
     assert rows1["latm__word_sorting__s0"][0]["correct"] is False  # protocol 1 unchanged
+
+
+def test_a_slow_make_step_is_skipped_for_now_and_rebuilt_clean_next_run(tmp_path):
+    import httpx
+
+    class SlowMaker(FakeAgent):
+        def __init__(self, path, role="maker"):
+            super().__init__(path, role)
+            self.path = path
+
+        def run(self, task):
+            if self.role == "latm-make":
+                open(self.path, "w").close()  # a half-built library file now exists on disk
+                raise httpx.ReadTimeout("model too slow")
+            return super().run(task)
+
+    def brain(system, prompt):
+        words = prompt.split("List:", 1)[1].split("\n")[0].split()
+        return "Answer: " + " ".join(sorted(words))
+
+    small = tmp_path / "user_x"
+    lines: list[str] = []
+    kw = dict(tasks=["word_sorting"], seeds=[0], n=3, modes=["direct-user", "latm"], checkpoint=tmp_path,
+              make_llm=lambda role: ScriptedLLM(brain), log=lines.append, user_checkpoint=small)
+    out = run_all(make_agent=SlowMaker, **kw)  # does not raise NetworkDown: a slow model is not a dead network
+    assert len(out["direct-user__word_sorting__s0"]) == 3 and not out.get("latm__word_sorting__s0")
+    assert any("next run builds it again" in line for line in lines)
+    assert not (small / "latm-make__word_sorting__s0.json").exists()  # no "built nothing" record
+    assert not (small / "latm__word_sorting__s0.db").exists()  # the half-built library is gone
